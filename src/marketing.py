@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 
 import config
 
+
 def pass_if_exc(func):
     def wrapper(*args, **kwargs):
         try:
@@ -12,6 +13,7 @@ def pass_if_exc(func):
         except Exception as exc:
             print("During marketing following error occured:")
             print(exc)
+
     return wrapper
 
 

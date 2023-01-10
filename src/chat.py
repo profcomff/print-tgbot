@@ -7,7 +7,7 @@ import requests
 from telegram import Update
 from telegram.ext import ContextTypes
 
-import src.answers as ans
+from src.answers import ans
 import config
 import src.database_functions as db
 
@@ -22,7 +22,7 @@ async def get_attachments(update, context):
     file = await context.bot.get_file(update.message.document.file_id)
     await file.download_to_drive(custom_path=path_to_save)
     await context.bot.send_message(chat_id=update.message.chat.id,
-                                   text=ans.print_ans['file_uploaded'].format(update.message.document.file_name))
+                                   text=ans['file_uploaded'].format(update.message.document.file_name))
     return path_to_save
 
 
@@ -36,7 +36,7 @@ async def check_proff(update, context):
     await context.bot.send_message(chat_id=update.message.chat.id,
                                    text='❌ Документ не будет распечатан. ❌')
     await context.bot.send_message(chat_id=update.message.chat.id,
-                                   text=ans.val_ans['val_need'])
+                                   text=ans['val_need'])
 
 
 async def order_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -57,9 +57,9 @@ async def order_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
             rfile = requests.post(config.PRINT_URL + '/file/' + pin, files=files)
             if rfile.status_code == 200:
                 await context.bot.send_message(chat_id=update.message.chat.id,
-                                               text=ans.print_ans['send_to_print'].format(pin))
+                                               text=ans['send_to_print'].format(pin))
                 await context.bot.send_message(chat_id=update.message.chat.id,
-                                               text=ans.print_ans['qrprint'].format(pin))
+                                               text=ans['qrprint'].format(pin))
                 # log.print(
                 #     vk_id=vk_id,
                 #     surname=surname,
@@ -68,7 +68,7 @@ async def order_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # )
             else:
                 await context.bot.send_message(chat_id=update.message.chat.id,
-                                               text=ans.errors['print_err'])
+                                               text=ans['print_err'])
                 # log.print_exc_other(
                 #     vk_id=vk_id,
                 #     surname=surname,
@@ -79,7 +79,7 @@ async def order_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # )
         else:
             await context.bot.send_message(chat_id=update.message.chat.id,
-                                           text=ans.errors['print_err'])
+                                           text=ans['print_err'])
             # log.print_exc_other(
             #     vk_id=vk_id,
             #     surname=surname,
@@ -98,15 +98,15 @@ async def validate_proff(update: Update, context: ContextTypes.DEFAULT_TYPE):
         surname = text.split('\n')[0].strip()
         number = text.split('\n')[1].strip()
 
-        r = requests.get(config.PRINT_URL+'/is_union_member', params=dict(surname=surname, v=1, number=number))
+        r = requests.get(config.PRINT_URL + '/is_union_member', params=dict(surname=surname, v=1, number=number))
         data = db.get_user(update.effective_user.id)
         if r.json() and data is None:
             db.add_user(chat_id, surname, number)
-            await context.bot.send_message(chat_id=chat_id, text=ans.val_ans['val_pass'])
+            await context.bot.send_message(chat_id=chat_id, text=ans['val_pass'])
             return True
         elif r.json() and data is not None:
             db.update_user(chat_id, surname, number)
-            await context.bot.send_message(chat_id=chat_id, text=ans.val_ans['val_update_pass'])
+            await context.bot.send_message(chat_id=chat_id, text=ans['val_update_pass'])
             # log.register(
             #     vk_id=user.user_id,
             #     surname=surname,
@@ -114,7 +114,7 @@ async def validate_proff(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # )
             return True
         elif r.json() is False:
-            await context.bot.send_message(chat_id=chat_id, text=ans.val_ans['val_fail'])
+            await context.bot.send_message(chat_id=chat_id, text=ans['val_fail'])
             # log.register_exc_wrong(
             #     vk_id=user.user_id,
             #     surname=surname,
@@ -122,16 +122,16 @@ async def validate_proff(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # )
     else:
         if db.get_user(chat_id) is None:
-            await context.bot.send_message(chat_id=chat_id, text=ans.val_ans['val_need'])
+            await context.bot.send_message(chat_id=chat_id, text=ans['val_need'])
         else:
-            await context.bot.send_message(chat_id=chat_id, text=ans.val_ans['val_update_fail'])
+            await context.bot.send_message(chat_id=chat_id, text=ans['val_update_fail'])
 
 
 def check_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_user.id
     if db.get_user(chat_id) is not None:
         _, surname, number = db.get_user(chat_id)
-        r = requests.get(config.PRINT_URL+'/is_union_member', params=dict(surname=surname, number=number, v=1))
+        r = requests.get(config.PRINT_URL + '/is_union_member', params=dict(surname=surname, number=number, v=1))
         if r.json():
             return True
         else:
