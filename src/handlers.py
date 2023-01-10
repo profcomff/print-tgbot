@@ -4,6 +4,7 @@
 import os
 import requests
 
+import telegram
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackContext
 
@@ -24,16 +25,12 @@ async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                     disable_web_page_preview=True)
 
 
-async def handler_about(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(ans['help'])
-
-
 async def handler_button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     if query.data == 'want_instruction':
         text = ans['help']
         keyboard = [[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')]]
-        if not __auth(update, context) is None:
+        if __auth(update, context) is None:
             keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
             text += ans['val_addition']
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -57,6 +54,25 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
     await query.edit_message_text(text=text, reply_markup=reply_markup, disable_web_page_preview=True)
 
 
+async def handler_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(ans['help'])
+
+
+async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    requisites = __auth(update, context)
+    if requisites is None:
+        await update.message.reply_text(ans['val_need'])
+    else:
+        tg_id, surname, number = requisites
+        await update.message.reply_text(f'Вы авторизованы!\nВаш id в телеграм: <code>{tg_id}</code>\nФамилия: <code>'
+                                        f'{surname}</code>\nНомер профсоюзного билета: <code>{number}</code>',
+                                        parse_mode=telegram.constants.ParseMode('HTML'))
+
+
+async def handler_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Эта функция ещё не готова.\nТут будет история печати :)')
+
+
 async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('Неизвестная команда.\nУ бота лишь две команды: /start /about')
 
@@ -75,6 +91,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     pdf_path = await __get_attachments(update, context)
+    # TODO: Настройки печати (сгенерировать id для клавиатуры)
     vk_id, surname, number = requisites
     title = update.message.document.file_name
 
