@@ -27,13 +27,28 @@
 #     asyncio.run(main())
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import logging
 import telegram
 import telegram.ext.filters as filters
-from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler, CallbackContext
 
-from src.chat import get_attachments
+from src.chat import order_print
 import config
 
 
@@ -44,8 +59,39 @@ logging.basicConfig(
 )
 
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a bot, please talk to me!")
+    # await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a bot, please talk to me!")
+
+    """Sends a message with three inline buttons attached."""
+    keyboard = [
+        [
+            InlineKeyboardButton("Option 1", callback_data='1'),
+            InlineKeyboardButton("Option 2", callback_data='2'),
+        ],
+        [InlineKeyboardButton("Option 3", callback_data='3')],
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text('Please choose:', reply_markup=reply_markup)
+
+async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="auth")
+    # surname, number = update.message.text.split('/auth ')[1]
+    # print(surname)
+    # print(number)
+
+
+
+async def name(update, context):
+    name = update.message.text
+    context.bot.send_message(chat_id=update.message.chat_id, text="Nice to meet you, " + name + "!")
+
+
+async def allhand(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    kb_fruits = ['kek', 'ne kek']
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="etc.", reply_markup=kb_fruits)
 
 
 # async def get_attachments(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -59,14 +105,29 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 #     await new_file.download_to_drive(custom_path='kek.pdf')
 #     await context.bot.send_message(chat_id=update.effective_chat.id, text="Attachment!")
 
+async def button(update: Update, context: CallbackContext) -> None:
+    """Parses the CallbackQuery and updates the message text."""
+    query = update.callback_query
+
+    # CallbackQueries need to be answered, even if no notification to the user is needed
+    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
+    await query.answer()
+
+    await query.edit_message_text(text=f"Selected option: {query.data}")
+
 if __name__ == '__main__':
     application = ApplicationBuilder().token(config.BOT_TOKEN).build()
 
-    # start_handler = CommandHandler('kek', start)
-    # message_handler = MessageHandler('kek', start)
-    command_handler = MessageHandler(filters.COMMAND, start)
-    document_handler = MessageHandler(filters.Document.MimeType('application/pdf'), get_attachments)
+    start_handler = CommandHandler('start', start)
+    # command_handler = MessageHandler(filters.COMMAND, botcommand)
+    auth_handler = CommandHandler('auth', auth)
+    document_handler = MessageHandler(filters.Document.MimeType('application/pdf'), order_print)
+    other_handler = MessageHandler(filters.ALL, allhand)
 
-    application.add_handler(command_handler)
+    application.add_handler(start_handler)
+    application.add_handler(auth_handler)
+    application.add_handler(CallbackQueryHandler(button))
     application.add_handler(document_handler)
+    application.add_handler(other_handler)
+
     application.run_polling()
