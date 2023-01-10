@@ -1,5 +1,1 @@
-/target
-.*
-!.gitignore
-!.env.example
-!.dockerignore
+auth.ini

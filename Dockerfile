@@ -2,7 +2,7 @@
 # 2021
 
 # Base image
-FROM python:3.10.0
+FROM python:3.11.0
 
 # Create directoris inside container
 ADD ./ /print-bot
@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 42
 
 # Run the file
-CMD ["python", "-u", "./print-bot.py"]
+CMD ["python", "-u", "./main.py"]
 
 ##===== Example docker Ubuntu command:
 # docker run -d --name print-bot -v /root/print-bot:/print-bot imageid
