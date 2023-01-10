@@ -32,20 +32,20 @@ def check_and_reconnect():
 
 def get_user(user_id):
     with connection.cursor() as cur:
-        cur.execute('SELECT * FROM printer_bot.vk_users WHERE vk_id=%s;', (user_id,))
+        cur.execute('SELECT * FROM bot_tg_print.tg_users WHERE tg_id=%s;', (user_id,))
         return cur.fetchone()
 
 
 def add_user(user_id, surname, number):
     with connection.cursor() as cur:
         cur.execute(
-            'INSERT INTO printer_bot.vk_users (vk_id,surname,number) VALUES (%s,%s,%s);',
+            'INSERT INTO bot_tg_print.tg_users (tg_id,surname,number) VALUES (%s,%s,%s);',
             (user_id, surname, number))
         connection.commit()
 
 
 def update_user(user_id, surname, number):
     with connection.cursor() as cur:
-        cur.execute('UPDATE printer_bot.vk_users SET surname=%s,number=%s WHERE vk_id=%s;',
+        cur.execute('UPDATE bot_tg_print.tg_users SET surname=%s,number=%s WHERE tg_id=%s;',
                     (surname, number, user_id))
         connection.commit()

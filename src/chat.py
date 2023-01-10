@@ -32,12 +32,11 @@ async def check_proff(update, context):
         r = requests.get(config.PRINT_URL + '/is_union_member', params=dict(surname=surname, number=number, v=1))
         if r.json():
             return vk_id, surname, number
-        else:
-            await context.bot.send_message(chat_id=update.message.chat.id,
-                                           text=ans.val_ans['val_need'])
-    else:
-        await context.bot.send_message(chat_id=update.message.chat.id,
-                                       text=ans.val_ans['val_need'])
+
+    await context.bot.send_message(chat_id=update.message.chat.id,
+                                   text='❌ Документ не будет распечатан. ❌')
+    await context.bot.send_message(chat_id=update.message.chat.id,
+                                   text=ans.val_ans['val_need'])
 
 
 async def order_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -92,41 +91,42 @@ async def order_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
             #     description='Fail on fetching code',
             # )
 
-# def validate_proff(user):
-#     if len(user.message.split('\n')) == 2:
-#         surname = user.message.split('\n')[0].strip()
-#         number = user.message.split('\n')[1].strip()
-#
-#         r = requests.get(PRINT_URL+'/is_union_member', params=dict(surname=surname, v=1, number=number))
-#         data = db.get_user(user.user_id)
-#         if r.json() and data is None:
-#             db.add_user(user.user_id, surname, number)
-#             kb.auth_button(user, ru.val_ans['val_pass'])
-#             return True
-#         elif r.json() and data is not None:
-#             db.update_user(user.user_id, surname, number)
-#             kb.auth_button(user, ru.val_ans['val_update_pass'])
-#             log.register(
-#                 vk_id=user.user_id,
-#                 surname=surname,
-#                 number=number,
-#             )
-#             return True
-#         elif r.json() is False:
-#             vk.write_msg(user, ru.val_ans['val_fail'])
-#             vk.write_msg(user, ru.val_ans['exp_name'])
-#             log.register_exc_wrong(
-#                 vk_id=user.user_id,
-#                 surname=surname,
-#                 number=number,
-#             )
-#     else:
-#         if db.get_user(user.user_id) is None:
-#             vk.write_msg(user, ru.val_ans['val_need'])
-#             vk.write_msg(user, ru.val_ans['exp_name'])
-#         else:
-#             vk.write_msg(user, ru.val_ans['val_update_fail'])
-#             vk.write_msg(user, ru.val_ans['exp_name'])
+
+async def validate_proff(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    chat_id = update.message.chat.id
+
+    if len(text.split('\n')) == 2:
+        surname = text.split('\n')[0].strip()
+        number = text.split('\n')[1].strip()
+
+        r = requests.get(config.PRINT_URL+'/is_union_member', params=dict(surname=surname, v=1, number=number))
+        data = db.get_user(update.effective_user.id)
+        if r.json() and data is None:
+            db.add_user(chat_id, surname, number)
+            await context.bot.send_message(chat_id=chat_id, text=ans.val_ans['val_pass'])
+            return True
+        elif r.json() and data is not None:
+            db.update_user(chat_id, surname, number)
+            await context.bot.send_message(chat_id=chat_id, text=ans.val_ans['val_update_pass'])
+            # log.register(
+            #     vk_id=user.user_id,
+            #     surname=surname,
+            #     number=number,
+            # )
+            return True
+        elif r.json() is False:
+            await context.bot.send_message(chat_id=chat_id, text=ans.val_ans['val_fail'])
+            # log.register_exc_wrong(
+            #     vk_id=user.user_id,
+            #     surname=surname,
+            #     number=number,
+            # )
+    else:
+        if db.get_user(chat_id) is None:
+            await context.bot.send_message(chat_id=chat_id, text=ans.val_ans['val_need'])
+        else:
+            await context.bot.send_message(chat_id=chat_id, text=ans.val_ans['val_update_fail'])
 #
 #
 
