@@ -5,7 +5,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Keyboar
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler, \
     CallbackContext
 
-from src.chat import order_print, validate_proff
+from src.chat import order_print, validate_proff, check_auth
 import config
 import src.answers as ans
 
@@ -17,27 +17,35 @@ logging.basicConfig(
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')],
-                                         [InlineKeyboardButton("Авторизация", callback_data='auth')]])
-    await update.message.reply_text(ans.kb_ans['help'], reply_markup=reply_markup, disable_web_page_preview=True)
+    keyboard = [[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')]]
+    text = ans.kb_ans['help']
+    if not check_auth(update, context):
+        text += ans.val_ans['val_addition']
+        keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
 
-
-async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Неизвестная команда.\nУ бота лишь две команды: /start /help')
+    await update.message.reply_text(text,
+                                    reply_markup=InlineKeyboardMarkup(keyboard),
+                                    disable_web_page_preview=True)
 
 
 async def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     if query.data == 'want_instruction':
         text = ans.kb_ans['help']
-        reply_markup = InlineKeyboardMarkup(
-            [[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')],
-             [InlineKeyboardButton("Авторизация", callback_data='auth')]])
+        keyboard = [[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')]]
+        if not check_auth(update, context):
+            keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
+            text += ans.val_ans['val_addition']
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
     elif query.data == 'want_confident':
         text = ans.kb_ans['conf_full']
-        reply_markup = InlineKeyboardMarkup(
-            [[InlineKeyboardButton("<- Назад", callback_data='want_instruction')],
-             [InlineKeyboardButton("Авторизация", callback_data='auth')]])
+        keyboard = [[InlineKeyboardButton("<- Назад", callback_data='want_instruction')]]
+        if not check_auth(update, context):
+            keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
+            text += ans.val_ans['val_addition']
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
     elif query.data == 'auth':
         text = ans.val_ans['val_need']
         reply_markup = None
@@ -49,17 +57,14 @@ async def button(update: Update, context: CallbackContext) -> None:
     await query.edit_message_text(text=text, reply_markup=reply_markup, disable_web_page_preview=True)
 
 
-async def allhand(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await validate_proff(update, context)
-    # await context.bot.send_message(chat_id=update.effective_chat.id, text="etc.")
-
-
+async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Неизвестная команда.\nУ бота лишь две команды: /start /help')
 
 if __name__ == '__main__':
     application = ApplicationBuilder().token(config.BOT_TOKEN).build()
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.COMMAND, unknown_command))
     application.add_handler(MessageHandler(filters.Document.MimeType('application/pdf'), order_print))
-    application.add_handler(MessageHandler(filters.ALL, allhand))
+    application.add_handler(MessageHandler(filters.ALL, validate_proff))
     application.add_handler(CallbackQueryHandler(button))
     application.run_polling()

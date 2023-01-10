@@ -48,8 +48,6 @@ async def order_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     vk_id, surname, number = requisites
     title = update.message.document.file_name
 
-    # surname = 'Маракулин'# update.message.chat.last_name
-    # number = 1018173  # TODO
     pin = None
     if pdf_path is not None:
         r = requests.post(config.PRINT_URL + '/file', json={'surname': surname, 'number': number, 'filename': title})
@@ -127,96 +125,16 @@ async def validate_proff(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=chat_id, text=ans.val_ans['val_need'])
         else:
             await context.bot.send_message(chat_id=chat_id, text=ans.val_ans['val_update_fail'])
-#
-#
 
 
-# async def message_analyzer(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     try:
-#         if len(user.message) > 0:
-#             for word in ans.ask_help:
-#                 if word in user.message.lower():
-#                     kb.main_page(user)
-#                     kb.auth_button(user)
-#                     return
-#
-#         if len(user.attachments) == 0:
-#             if len(user.message) > 0:
-#                 validate_proff(user)
-#             else:
-#                 kb.main_page(user)
-#                 kb.auth_button(user)
-#         else:
-#             requisites = check_proff(user)
-#             if requisites is not None:
-#                 await order_print(user, requisites)
-
-# except OSError as err:
-#     raise err
-# except psycopg2.Error as err:
-#     vk.write_msg(user, ru.errors['bd_error'])
-#     raise err
-# except json.decoder.JSONDecodeError as err:
-#     vk.write_msg(user, ru.errors['print_err'])
-#     logging.error('JSONDecodeError (message_analyzer), description:')
-#     traceback.print_tb(err.__traceback__)
-#     logging.error(str(err.args))
-#     time.sleep(1)
-# except Exception as err:
-#     ans = ru.errors['im_broken']
-#     vk.write_msg(user, ans)
-#     logging.error('Unknown Exception (message_analyzer), description:')
-#     traceback.print_tb(err.__traceback__)
-#     logging.error(str(err.args))
-
-#
-# def process_event(event):
-#     if event.type == vk.VkBotEventType.MESSAGE_NEW:
-#         vk_user = vk.user_get(event.message['from_id'])
-#         user = vk.User(event.message['from_id'], event.message['text'],
-#                        event.message.attachments, (vk_user[0])['first_name'], (vk_user[0])['last_name'])
-#         db.check_and_reconnect()
-#         if event.message.payload is not None:
-#             kb.keyboard_browser(user, event.message.payload)
-#         else:
-#             message_analyzer(user)
-
-
-# def chat_loop():
-#     while True:
-#         try:
-#             vk.reconnect()
-#             for event in vk.longpoll.listen():
-#                 process_event(event)
-#
-#         except OSError as err:
-#             logging.error('OSError (longpull_loop), description:')
-#             traceback.print_tb(err.__traceback__)
-#             logging.error(str(err.args))
-#             try:
-#                 logging.warning('Try to recconnect VK...')
-#                 vk.reconnect()
-#                 logging.warning('VK connected successful')
-#                 time.sleep(1)
-#             except VkApiError:
-#                 logging.error('Recconnect VK failed')
-#                 time.sleep(10)
-#
-#         except psycopg2.Error as err:
-#             logging.error('Database Error (longpull_loop), description:')
-#             traceback.print_tb(err.__traceback__)
-#             logging.error(err.args)
-#             try:
-#                 logging.warning('Try to recconnect database...')
-#                 db.reconnect()
-#                 logging.warning('Database connected successful')
-#                 time.sleep(1)
-#             except psycopg2.Error:
-#                 logging.error('Recconnect database failed')
-#                 time.sleep(10)
-#
-#         except Exception as err:
-#             logging.error('BaseException (longpull_loop), description:')
-#             traceback.print_tb(err.__traceback__)
-#             logging.error(str(err.args))
-#             time.sleep(5)
+def check_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_user.id
+    if db.get_user(chat_id) is not None:
+        _, surname, number = db.get_user(chat_id)
+        r = requests.get(config.PRINT_URL+'/is_union_member', params=dict(surname=surname, number=number, v=1))
+        if r.json():
+            return True
+        else:
+            return False
+    else:
+        return False
