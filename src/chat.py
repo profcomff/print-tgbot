@@ -35,13 +35,9 @@ async def check_proff(update, context):
         else:
             await context.bot.send_message(chat_id=update.message.chat.id,
                                            text=ans.val_ans['val_need'])
-            await context.bot.send_message(chat_id=update.message.chat.id,
-                                           text=ans.val_ans['exp_name'])
     else:
         await context.bot.send_message(chat_id=update.message.chat.id,
                                        text=ans.val_ans['val_need'])
-        await context.bot.send_message(chat_id=update.message.chat.id,
-                                       text=ans.val_ans['exp_name'])
 
 
 async def order_print(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -1,56 +1,13 @@
-# import asyncio
-# import telegram
-#
-#
-#
-# # async def main():
-# #     bot = telegram.Bot(TOKEN)
-# #     async with bot:
-# #         print(await bot.get_me())
-#
-#
-# async def main():
-#     bot = telegram.Bot(TOKEN)
-#     async with bot:
-#         updates = await bot.get_updates()
-#         print(len(updates)) # .message.from_user.id
-#         print(updates[1].message.from_user.id)
-#         await bot.send_message(text='Hi Annndruha!', chat_id=updates[1].message.from_user.id)
-#
-#
-# # async def main():
-# #     bot = telegram.Bot(TOKEN)
-# #     async with bot:
-# #         await bot.send_message(text='Hi John!', chat_id=1234567890)
-#
-# if __name__ == '__main__':
-#     asyncio.run(main())
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import logging
 import telegram
 import telegram.ext.filters as filters
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler, CallbackContext
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler, \
+    CallbackContext
 
 from src.chat import order_print
 import config
-
+import src.answers as ans
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -59,39 +16,42 @@ logging.basicConfig(
 )
 
 
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a bot, please talk to me!")
-
-    """Sends a message with three inline buttons attached."""
-    keyboard = [
-        [
-            InlineKeyboardButton("Option 1", callback_data='1'),
-            InlineKeyboardButton("Option 2", callback_data='2'),
-        ],
-        [InlineKeyboardButton("Option 3", callback_data='3')],
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await update.message.reply_text('Please choose:', reply_markup=reply_markup)
-
-async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="auth")
-    # surname, number = update.message.text.split('/auth ')[1]
-    # print(surname)
-    # print(number)
+    reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')],
+                                         [InlineKeyboardButton("Авторизация", callback_data='auth')]])
+    await update.message.reply_text(ans.kb_ans['help'], reply_markup=reply_markup, disable_web_page_preview=True)
 
 
+async def button(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    if query.data == 'want_instruction':
+        text = ans.kb_ans['help']
+        reply_markup = InlineKeyboardMarkup(
+            [[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')],
+             [InlineKeyboardButton("Авторизация", callback_data='auth')]])
+    elif query.data == 'want_confident':
+        text = ans.kb_ans['conf_full']
+        reply_markup = InlineKeyboardMarkup(
+            [[InlineKeyboardButton("<- Назад", callback_data='want_instruction')],
+             [InlineKeyboardButton("Авторизация", callback_data='auth')]])
+    else:
+        text = ans.val_ans['val_need']
+        reply_markup = None
 
-async def name(update, context):
-    name = update.message.text
-    context.bot.send_message(chat_id=update.message.chat_id, text="Nice to meet you, " + name + "!")
+    await query.answer()
+    await query.edit_message_text(text=text, reply_markup=reply_markup, disable_web_page_preview=True)
+    # await query.edit_message_reply_markup(reply_markup=reply_markup)
+
+
+# async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     await context.bot.send_message(chat_id=update.effective_chat.id, text="auth")
+#     # surname, number = update.message.text.split('/auth ')[1]
+#     # print(surname)
+#     # print(number)
 
 
 async def allhand(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    kb_fruits = ['kek', 'ne kek']
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="etc.", reply_markup=kb_fruits)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="etc.")
 
 
 # async def get_attachments(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -105,28 +65,20 @@ async def allhand(update: Update, context: ContextTypes.DEFAULT_TYPE):
 #     await new_file.download_to_drive(custom_path='kek.pdf')
 #     await context.bot.send_message(chat_id=update.effective_chat.id, text="Attachment!")
 
-async def button(update: Update, context: CallbackContext) -> None:
-    """Parses the CallbackQuery and updates the message text."""
-    query = update.callback_query
-
-    # CallbackQueries need to be answered, even if no notification to the user is needed
-    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
-    await query.answer()
-
-    await query.edit_message_text(text=f"Selected option: {query.data}")
 
 if __name__ == '__main__':
     application = ApplicationBuilder().token(config.BOT_TOKEN).build()
 
     start_handler = CommandHandler('start', start)
     # command_handler = MessageHandler(filters.COMMAND, botcommand)
-    auth_handler = CommandHandler('auth', auth)
+    # auth_handler = CommandHandler('auth', auth)
     document_handler = MessageHandler(filters.Document.MimeType('application/pdf'), order_print)
     other_handler = MessageHandler(filters.ALL, allhand)
+    buttons_handler = CallbackQueryHandler(button)
 
     application.add_handler(start_handler)
-    application.add_handler(auth_handler)
-    application.add_handler(CallbackQueryHandler(button))
+    # application.add_handler(auth_handler)
+    application.add_handler(buttons_handler)
     application.add_handler(document_handler)
     application.add_handler(other_handler)
 
