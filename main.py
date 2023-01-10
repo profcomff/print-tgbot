@@ -1,13 +1,10 @@
 import logging
-import telegram
 import telegram.ext.filters as filters
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler, \
-    CallbackContext
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler
 
-from src.chat import order_print, validate_proff, check_auth
 import config
-from src.answers import ans
+from src.handlers import handler_start, handler_about, handler_unknown_command, handler_order_print, handler_doc_error, \
+    handler_validate_proff, handler_button
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -15,62 +12,13 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')]]
-    text = ans['help']
-    if not check_auth(update, context):
-        text += ans['val_addition']
-        keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
-
-    await update.message.reply_text(text,
-                                    reply_markup=InlineKeyboardMarkup(keyboard),
-                                    disable_web_page_preview=True)
-
-
-async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(ans['help'])
-
-
-async def button(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
-    if query.data == 'want_instruction':
-        text = ans['help']
-        keyboard = [[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')]]
-        if not check_auth(update, context):
-            keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
-            text += ans['val_addition']
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-    elif query.data == 'want_confident':
-        text = ans['conf_full']
-        keyboard = [[InlineKeyboardButton("<- Назад", callback_data='want_instruction')]]
-        if not check_auth(update, context):
-            keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
-            text += ans['val_addition']
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-    elif query.data == 'auth':
-        text = ans['val_need']
-        reply_markup = None
-    else:
-        text = 'Видимо бот обновился, выполните команду /start'
-        reply_markup = None
-
-    await query.answer()
-    await query.edit_message_text(text=text, reply_markup=reply_markup, disable_web_page_preview=True)
-
-
-async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Неизвестная команда.\nУ бота лишь две команды: /start /about')
-
-
 if __name__ == '__main__':
     application = ApplicationBuilder().token(config.BOT_TOKEN).build()
-    application.add_handler(CommandHandler('start', start))
-    application.add_handler(CommandHandler('about', about))
-    application.add_handler(MessageHandler(filters.COMMAND, unknown_command))
-    application.add_handler(MessageHandler(filters.Document.MimeType('application/pdf'), order_print))
-    application.add_handler(MessageHandler(filters.ALL, validate_proff))
-    application.add_handler(CallbackQueryHandler(button))
+    application.add_handler(CommandHandler('start', handler_start))
+    application.add_handler(CommandHandler('about', handler_about))
+    application.add_handler(MessageHandler(filters.COMMAND, handler_unknown_command))
+    application.add_handler(MessageHandler(filters.Document.MimeType('application/pdf'), handler_order_print))
+    application.add_handler(MessageHandler(filters.Document.ALL, handler_doc_error))
+    application.add_handler(MessageHandler(filters.ALL, handler_validate_proff))
+    application.add_handler(CallbackQueryHandler(handler_button))
     application.run_polling()
