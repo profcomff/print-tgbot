@@ -15,7 +15,7 @@ from src.answers import ans
 async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')]]
     text = ans['help']
-    if not __check_auth(update, context):
+    if __auth(update, context) is None:
         text += ans['val_addition']
         keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
 
@@ -33,7 +33,7 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
     if query.data == 'want_instruction':
         text = ans['help']
         keyboard = [[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')]]
-        if not __check_auth(update, context):
+        if not __auth(update, context) is None:
             keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
             text += ans['val_addition']
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -41,7 +41,7 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
     elif query.data == 'want_confident':
         text = ans['conf_full']
         keyboard = [[InlineKeyboardButton("<- Назад", callback_data='want_instruction')]]
-        if not __check_auth(update, context):
+        if __auth(update, context) is None:
             keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
             text += ans['val_addition']
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -61,13 +61,17 @@ async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_
     await update.message.reply_text('Неизвестная команда.\nУ бота лишь две команды: /start /about')
 
 
-async def handler_doc_error(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handler_mismatch_doctype(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('Документы на печать принимаются только в формате PDF')
 
 
-async def handler_order_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    requisites = await __check_proff(update, context)
+async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    requisites = __auth(update, context)
     if requisites is None:
+        await context.bot.send_message(chat_id=update.message.chat.id,
+                                       text='❌ Документ не будет распечатан. ❌')
+        await context.bot.send_message(chat_id=update.message.chat.id,
+                                       text=ans['val_need'])
         return
 
     pdf_path = await __get_attachments(update, context)
@@ -116,7 +120,7 @@ async def handler_order_print(update: Update, context: ContextTypes.DEFAULT_TYPE
             # )
 
 
-async def handler_validate_proff(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     chat_id = update.message.chat.id
 
@@ -167,27 +171,10 @@ async def __get_attachments(update, context):
     return path_to_save
 
 
-async def __check_proff(update, context):
-    if db.get_user(update.message.chat.id) is not None:
-        vk_id, surname, number = db.get_user(update.message.chat.id)
-        r = requests.get(config.PRINT_URL + '/is_union_member', params=dict(surname=surname, number=number, v=1))
-        if r.json():
-            return vk_id, surname, number
-
-    await context.bot.send_message(chat_id=update.message.chat.id,
-                                   text='❌ Документ не будет распечатан. ❌')
-    await context.bot.send_message(chat_id=update.message.chat.id,
-                                   text=ans['val_need'])
-
-
-def __check_auth(update, context):
+def __auth(update, context):
     chat_id = update.effective_user.id
     if db.get_user(chat_id) is not None:
-        _, surname, number = db.get_user(chat_id)
+        tg_id, surname, number = db.get_user(chat_id)
         r = requests.get(config.PRINT_URL + '/is_union_member', params=dict(surname=surname, number=number, v=1))
         if r.json():
-            return True
-        else:
-            return False
-    else:
-        return False
+            return tg_id, surname, number
