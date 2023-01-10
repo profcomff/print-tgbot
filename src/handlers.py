@@ -14,11 +14,11 @@ from src.answers import ans
 
 
 async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')]]
+    keyboard = [[InlineKeyboardButton(ans['conf'], callback_data='want_confident')]]
     text = ans['help']
     if __auth(update, context) is None:
         text += ans['val_addition']
-        keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
+        keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='auth')])
 
     await update.message.reply_text(text,
                                     reply_markup=InlineKeyboardMarkup(keyboard),
@@ -29,9 +29,9 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     if query.data == 'want_instruction':
         text = ans['help']
-        keyboard = [[InlineKeyboardButton("Конфиденциальность", callback_data='want_confident')]]
+        keyboard = [[InlineKeyboardButton(ans['conf'], callback_data='want_confident')]]
         if __auth(update, context) is None:
-            keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
+            keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='auth')])
             text += ans['val_addition']
         reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -39,7 +39,7 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
         text = ans['conf_full']
         keyboard = [[InlineKeyboardButton("<- Назад", callback_data='want_instruction')]]
         if __auth(update, context) is None:
-            keyboard.append([InlineKeyboardButton("Авторизация", callback_data='auth')])
+            keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='auth')])
             text += ans['val_addition']
         reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -140,6 +140,12 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     chat_id = update.message.chat.id
+    if text is None:
+        if db.get_user(chat_id) is None:
+            await context.bot.send_message(chat_id=chat_id, text=ans['val_need'])
+        else:
+            await context.bot.send_message(chat_id=chat_id, text=ans['val_update_fail'])
+        return
 
     if len(text.split('\n')) == 2:
         surname = text.split('\n')[0].strip()
