@@ -107,7 +107,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                                text=ans['send_to_print'].format(pin))
                 await context.bot.send_message(chat_id=update.message.chat.id,
                                                text=ans['qrprint'].format(pin))
-                # log.print(
+                # log.print_success(
                 #     vk_id=vk_id,
                 #     surname=surname,
                 #     number=number,

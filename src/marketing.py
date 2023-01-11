@@ -1,6 +1,5 @@
 import json
 import requests
-import configparser
 from urllib.parse import urljoin
 
 import config
@@ -11,7 +10,7 @@ def pass_if_exc(func):
         try:
             func(*args, **kwargs)
         except Exception as exc:
-            print("During marketing following error occured:")
+            print("During marketing following error occurred:")
             print(exc)
 
     return wrapper
@@ -44,7 +43,7 @@ def register_exc_wrong(**user_info):
 
 
 @pass_if_exc
-def print(**print_info):
+def print_success(**print_info):
     requests.post(
         urljoin(config.MARKETING_URL, "v1/action"),
         json={

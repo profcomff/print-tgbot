@@ -1,25 +1,23 @@
 ﻿# Marakulin Andrey @annndruha
-# 2021
+# 2023
 import psycopg2
-import configparser
+import config
 
-config = configparser.ConfigParser()
-config.read('auth.ini')
 
-connection = psycopg2.connect(dbname=config['auth_db']['name'],
-                              user=config['auth_db']['user'],
-                              password=config['auth_db']['password'],
-                              host=config['auth_db']['host'],
-                              port=config['auth_db']['port'])
+connection = psycopg2.connect(dbname=config.DBNAME,
+                              user=config.DBUSER,
+                              password=config.DBPASSWORD,
+                              host=config.DBHOST,
+                              port=config.DBPORT)
 
 
 def reconnect():
     global connection
-    connection = psycopg2.connect(dbname=config['auth_db']['name'],
-                                  user=config['auth_db']['user'],
-                                  password=config['auth_db']['password'],
-                                  host=config['auth_db']['host'],
-                                  port=config['auth_db']['port'])
+    connection = psycopg2.connect(dbname=config.DBNAME,
+                                  user=config.DBUSER,
+                                  password=config.DBPASSWORD,
+                                  host=config.DBHOST,
+                                  port=config.DBPORT)
 
 
 def check_and_reconnect():
