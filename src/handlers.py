@@ -37,7 +37,7 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
 
     elif query.data == 'want_confident':
         text = ans['conf_full']
-        keyboard = [[InlineKeyboardButton("<- Назад", callback_data='want_instruction')]]
+        keyboard = [[InlineKeyboardButton(ans['back'], callback_data='want_instruction')]]
         if __auth(update, context) is None:
             keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='auth')])
             text += ans['val_addition']
@@ -47,7 +47,7 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
         text = ans['val_need']
         reply_markup = None
     else:
-        text = 'Видимо бот обновился, выполните команду /start'
+        text = ans['unknown_query']
         reply_markup = None
 
     await query.answer()
@@ -64,28 +64,27 @@ async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(ans['val_need'])
     else:
         tg_id, surname, number = requisites
-        await update.message.reply_text(f'Вы авторизованы!\nВаш id в телеграм: <code>{tg_id}</code>\nФамилия: <code>'
-                                        f'{surname}</code>\nНомер профсоюзного билета: <code>{number}</code>',
+        await update.message.reply_text(ans['val_info'].format(tg_id, surname, number),
                                         parse_mode=telegram.constants.ParseMode('HTML'))
 
 
 async def handler_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Эта функция ещё не готова.\nТут будет история печати :)')
+    await update.message.reply_text(ans['history_not_implement'])
 
 
 async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Неизвестная команда.\nУ бота лишь две команды: /start /about')
+    await update.message.reply_text(ans['unknown_command'])
 
 
 async def handler_mismatch_doctype(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Документы на печать принимаются только в формате PDF')
+    await update.message.reply_text(ans['only_pdf'])
 
 
 async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update, context)
     if requisites is None:
         await context.bot.send_message(chat_id=update.message.chat.id,
-                                       text='❌ Документ не принят, сначала авторизуйтесь: ❌')
+                                       text=ans['doc_not_accepted'])
         await context.bot.send_message(chat_id=update.message.chat.id,
                                        text=ans['val_need'])
         return

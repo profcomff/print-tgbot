@@ -1,4 +1,6 @@
 import json
+import logging
+
 import requests
 from urllib.parse import urljoin
 
@@ -10,8 +12,8 @@ def pass_if_exc(func):
         try:
             func(*args, **kwargs)
         except Exception as exc:
-            print("During marketing following error occurred:")
-            print(exc)
+            logging.error('During marketing following error occurred:')
+            logging.error(exc)
 
     return wrapper
 
@@ -19,7 +21,7 @@ def pass_if_exc(func):
 @pass_if_exc
 def register(**user_info):
     requests.post(
-        urljoin(config.MARKETING_URL, "v1/action"),
+        urljoin(config.MARKETING_URL, 'v1/action'),
         json={
             'user_id': -2,
             'action': 'print bot register',
@@ -32,7 +34,7 @@ def register(**user_info):
 @pass_if_exc
 def register_exc_wrong(**user_info):
     requests.post(
-        urljoin(config.MARKETING_URL, "v1/action"),
+        urljoin(config.MARKETING_URL, 'v1/action'),
         json={
             'user_id': -2,
             'action': 'print bot register exc wrong creds',
@@ -45,13 +47,13 @@ def register_exc_wrong(**user_info):
 @pass_if_exc
 def print_success(**print_info):
     requests.post(
-        urljoin(config.MARKETING_URL, "v1/action"),
+        urljoin(config.MARKETING_URL, 'v1/action'),
         json={
             'user_id': -2,
             'action': 'print bot sent',
             'additional_data': json.dumps(print_info),
             'path_from': 'https://vk.com/im',
-            'path_to': urljoin(config.PRINT_URL, f'/file/{print_info.get("pin")}'),
+            'path_to': urljoin(config.PRINT_URL, f'''/file/{print_info.get('pin')}'''),
         }
     )
 
@@ -59,7 +61,7 @@ def print_success(**print_info):
 @pass_if_exc
 def print_exc_many(**print_info):
     requests.post(
-        urljoin(config.MARKETING_URL, "v1/action"),
+        urljoin(config.MARKETING_URL, 'v1/action'),
         json={
             'user_id': -2,
             'action': 'print bot sent exc many',
@@ -72,7 +74,7 @@ def print_exc_many(**print_info):
 @pass_if_exc
 def print_exc_format(**print_info):
     requests.post(
-        urljoin(config.MARKETING_URL, "v1/action"),
+        urljoin(config.MARKETING_URL, 'v1/action'),
         json={
             'user_id': -2,
             'action': 'print bot sent exc format',
@@ -85,7 +87,7 @@ def print_exc_format(**print_info):
 @pass_if_exc
 def print_exc_other(**print_info):
     requests.post(
-        urljoin(config.MARKETING_URL, "v1/action"),
+        urljoin(config.MARKETING_URL, 'v1/action'),
         json={
             'user_id': -2,
             'action': 'print bot sent exc other',
