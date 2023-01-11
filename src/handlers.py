@@ -91,6 +91,19 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     pdf_path = await __get_attachments(update, context)
     # TODO: Настройки печати (сгенерировать id для клавиатуры)
+    docid = 1
+
+    await __print_confirm(update, context, pdf_path, docid)
+
+
+async def __print_confirm(update, context, pdf_path, docid):
+    requisites = __auth(update, context)
+    if requisites is None:
+        await context.bot.send_message(chat_id=update.message.chat.id,
+                                       text=ans['doc_not_accepted'])
+        await context.bot.send_message(chat_id=update.message.chat.id,
+                                       text=ans['val_need'])
+        return
     vk_id, surname, number = requisites
     title = update.message.document.file_name
 
@@ -103,9 +116,8 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
             rfile = requests.post(config.PRINT_URL + '/file/' + pin, files=files)
             if rfile.status_code == 200:
                 await context.bot.send_message(chat_id=update.message.chat.id,
-                                               text=ans['send_to_print'].format(pin))
-                await context.bot.send_message(chat_id=update.message.chat.id,
-                                               text=ans['qrprint'].format(pin))
+                                               text=ans['send_to_print'].format(pin, pin),
+                                               parse_mode=telegram.constants.ParseMode('HTML'))
                 # log.print_success(
                 #     vk_id=vk_id,
                 #     surname=surname,
