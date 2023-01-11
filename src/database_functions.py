@@ -3,7 +3,6 @@
 import psycopg2
 import config
 
-
 connection = psycopg2.connect(dbname=config.DBNAME,
                               user=config.DBUSER,
                               password=config.DBPASSWORD,

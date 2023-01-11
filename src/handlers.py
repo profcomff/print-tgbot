@@ -111,8 +111,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 #     vk_id=vk_id,
                 #     surname=surname,
                 #     number=number,
-                #     pin=pin,
-                # )
+                #     pin=pin)
             else:
                 await context.bot.send_message(chat_id=update.message.chat.id,
                                                text=ans['print_err'])
@@ -122,8 +121,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 #     number=number,
                 #     pin=pin,
                 #     status_code=rfile.status_code,
-                #     description='Fail on file upload',
-                # )
+                #     description='Fail on file upload')
         else:
             await context.bot.send_message(chat_id=update.message.chat.id,
                                            text=ans['print_err'])
@@ -133,8 +131,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
             #     number=number,
             #     pin=pin,
             #     status_code=r.status_code,
-            #     description='Fail on fetching code',
-            # )
+            #     description='Fail on fetching code')
 
 
 async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
