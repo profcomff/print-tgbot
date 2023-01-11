@@ -26,8 +26,7 @@ async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handler_button(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
-    if query.data == 'want_instruction':
+    if update.callback_query.data == 'want_instruction':
         text = ans['help']
         keyboard = [[InlineKeyboardButton(ans['conf'], callback_data='want_confident')]]
         if __auth(update, context) is None:
@@ -35,7 +34,7 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
             text += ans['val_addition']
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-    elif query.data == 'want_confident':
+    elif update.callback_query.data == 'want_confident':
         text = ans['conf_full']
         keyboard = [[InlineKeyboardButton(ans['back'], callback_data='want_instruction')]]
         if __auth(update, context) is None:
@@ -43,15 +42,21 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
             text += ans['val_addition']
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-    elif query.data == 'auth':
+    elif update.callback_query.data == 'auth':
         text = ans['val_need']
         reply_markup = None
+    elif update.callback_query.data.startswith('file_'):
+        await __print_settings_solver(update, context)
+        return
     else:
         text = ans['unknown_query']
         reply_markup = None
 
-    await query.answer()
-    await query.edit_message_text(text=text, reply_markup=reply_markup, disable_web_page_preview=True)
+    await update.callback_query.answer()
+    await update.callback_query.edit_message_text(text=text,
+                                  reply_markup=reply_markup,
+                                  disable_web_page_preview=True,
+                                  parse_mode=telegram.constants.ParseMode('HTML'))
 
 
 async def handler_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -80,6 +85,27 @@ async def handler_mismatch_doctype(update: Update, context: ContextTypes.DEFAULT
     await update.message.reply_text(ans['only_pdf'])
 
 
+async def __print_settings_solver(update, context):
+    settings = update.callback_query.data.split('_')
+    copys, duplex, uid = int(settings[2]), settings[3], settings[4]
+    if settings[1] == 'copys':
+        copys += 1
+    elif settings[1] == 'duplex':
+        duplex = 'd' if duplex == 's' else 's'
+    elif settings [1] == 'print':
+        await __print_confirm(update, context)
+        return
+    keyboard = [[InlineKeyboardButton(f'Копий: {copys}',
+                                      callback_data=f'file_copys_{copys}_{duplex}_{uid}'),
+                 InlineKeyboardButton('Односторонняя печать' if duplex == 's' else 'Двухсторонняя печать',
+                                      callback_data=f'file_duplex_{copys}_{duplex}_{uid}')],
+                [InlineKeyboardButton('🖨 Отправить на печать!',
+                                      callback_data=f'file_print_{copys}_{duplex}_{uid}')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.callback_query.answer()
+    await update.callback_query.edit_message_reply_markup(reply_markup=reply_markup)
+
+
 async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update, context)
     if requisites is None:
@@ -89,14 +115,22 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                        text=ans['val_need'])
         return
 
-    pdf_path = await __get_attachments(update, context)
-    # TODO: Настройки печати (сгенерировать id для клавиатуры)
-    docid = 1
+    pdf_path, uid = await __get_attachments(update, context)
 
-    await __print_confirm(update, context, pdf_path, docid)
+    if os.path.exists(pdf_path):
+        keyboard = [[InlineKeyboardButton(f'Копий: 1', callback_data=f'file_copys_1_s_{uid}'),
+                     InlineKeyboardButton(f'Односторонняя печать', callback_data=f'file_duplex_1_s_{uid}')],
+                    [InlineKeyboardButton('🖨 Отправить на печать!', callback_data=f'file_print_1_s_{uid}')]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await context.bot.send_message(chat_id=update.message.chat.id,
+                                       text=ans['file_uploaded'].format(update.message.document.file_name),
+                                       reply_markup=reply_markup,
+                                       parse_mode=telegram.constants.ParseMode('HTML'))
+    else:
+        await context.bot.send_message(chat_id=update.message.chat.id, text=ans['download_error'])
 
 
-async def __print_confirm(update, context, pdf_path, docid):
+async def __print_confirm(update, context):
     requisites = __auth(update, context)
     if requisites is None:
         await context.bot.send_message(chat_id=update.message.chat.id,
@@ -104,45 +138,27 @@ async def __print_confirm(update, context, pdf_path, docid):
         await context.bot.send_message(chat_id=update.message.chat.id,
                                        text=ans['val_need'])
         return
-    vk_id, surname, number = requisites
-    title = update.message.document.file_name
 
-    pin = None
-    if pdf_path is not None:
+
+    settings = update.callback_query.data.split('_')
+    vk_id, surname, number = requisites
+    copys, duplex, uid = int(settings[2]), settings[3], settings[4]
+    title = 'TBD'  # TODO: Parce old message
+    pdf_path = os.path.join(config.PDF_PATH, uid + '.pdf')
+
+    if os.path.exists(pdf_path):
         r = requests.post(config.PRINT_URL + '/file', json={'surname': surname, 'number': number, 'filename': title})
         if r.status_code == 200:
             pin = r.json()['pin']
             files = {'file': (title, open(pdf_path, 'rb'), 'application/pdf', {'Expires': '0'})}
             rfile = requests.post(config.PRINT_URL + '/file/' + pin, files=files)
             if rfile.status_code == 200:
-                await context.bot.send_message(chat_id=update.message.chat.id,
-                                               text=ans['send_to_print'].format(pin, pin),
-                                               parse_mode=telegram.constants.ParseMode('HTML'))
-                # log.print_success(
-                #     vk_id=vk_id,
-                #     surname=surname,
-                #     number=number,
-                #     pin=pin)
-            else:
-                await context.bot.send_message(chat_id=update.message.chat.id,
-                                               text=ans['print_err'])
-                # log.print_exc_other(
-                #     vk_id=vk_id,
-                #     surname=surname,
-                #     number=number,
-                #     pin=pin,
-                #     status_code=rfile.status_code,
-                #     description='Fail on file upload')
-        else:
-            await context.bot.send_message(chat_id=update.message.chat.id,
-                                           text=ans['print_err'])
-            # log.print_exc_other(
-            #     vk_id=vk_id,
-            #     surname=surname,
-            #     number=number,
-            #     pin=pin,
-            #     status_code=r.status_code,
-            #     description='Fail on fetching code')
+                await update.callback_query.edit_message_text(text=ans['send_to_print'].format(pin, pin),
+                                                              disable_web_page_preview=True,
+                                                              parse_mode=telegram.constants.ParseMode('HTML'))
+                return
+    await update.callback_query.edit_message_text(text=ans['print_err'],
+                                                  parse_mode=telegram.constants.ParseMode('HTML'))
 
 
 async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -191,15 +207,14 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def __get_attachments(update, context):
     if not os.path.exists(config.PDF_PATH):
         os.makedirs(config.PDF_PATH)
-    if not os.path.exists(os.path.join(config.PDF_PATH, str(update.message.chat.id))):
-        os.makedirs(os.path.join(config.PDF_PATH, str(update.message.chat.id)))
-    path_to_save = os.path.join(config.PDF_PATH, str(update.message.chat.id), update.message.document.file_name)
+    # if not os.path.exists(os.path.join(config.PDF_PATH, str(update.message.chat.id))):
+    #     os.makedirs(os.path.join(config.PDF_PATH, str(update.message.chat.id)))
+    # path_to_save = os.path.join(config.PDF_PATH, str(update.message.chat.id), update.message.document.file_name)
+    path_to_save = os.path.join(config.PDF_PATH, update.message.document.file_unique_id + '.pdf')
 
     file = await context.bot.get_file(update.message.document.file_id)
     await file.download_to_drive(custom_path=path_to_save)
-    await context.bot.send_message(chat_id=update.message.chat.id,
-                                   text=ans['file_uploaded'].format(update.message.document.file_name))
-    return path_to_save
+    return path_to_save, update.message.document.file_unique_id
 
 
 def __auth(update, context):
