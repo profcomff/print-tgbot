@@ -48,15 +48,18 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
     elif update.callback_query.data.startswith('file_'):
         await __print_settings_solver(update, context)
         return
+    # elif update.callback_query.data == 'show_file_info':
+    #     # await __print_settings_solver(update, context)
+    #     raise NotImplementedError
     else:
         text = ans['unknown_query']
         reply_markup = None
 
     await update.callback_query.answer()
     await update.callback_query.edit_message_text(text=text,
-                                  reply_markup=reply_markup,
-                                  disable_web_page_preview=True,
-                                  parse_mode=telegram.constants.ParseMode('HTML'))
+                                                  reply_markup=reply_markup,
+                                                  disable_web_page_preview=True,
+                                                  parse_mode=telegram.constants.ParseMode('HTML'))
 
 
 async def handler_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -92,7 +95,7 @@ async def __print_settings_solver(update, context):
         copys += 1
     elif settings[1] == 'duplex':
         duplex = 'd' if duplex == 's' else 's'
-    elif settings [1] == 'print':
+    elif settings[1] == 'print':
         await __print_confirm(update, context)
         return
     keyboard = [[InlineKeyboardButton(f'Копий: {copys}',
@@ -130,6 +133,9 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=update.message.chat.id, text=ans['download_error'])
 
 
+# async def __show_file_info(update, context):
+
+
 async def __print_confirm(update, context):
     requisites = __auth(update, context)
     if requisites is None:
@@ -139,7 +145,6 @@ async def __print_confirm(update, context):
                                        text=ans['val_need'])
         return
 
-
     settings = update.callback_query.data.split('_')
     vk_id, surname, number = requisites
     copys, duplex, uid = int(settings[2]), settings[3], settings[4]
@@ -147,7 +152,11 @@ async def __print_confirm(update, context):
     pdf_path = os.path.join(config.PDF_PATH, uid + '.pdf')
 
     if os.path.exists(pdf_path):
-        r = requests.post(config.PRINT_URL + '/file', json={'surname': surname, 'number': number, 'filename': title})
+        r = requests.post(config.PRINT_URL + '/file', json={'surname': surname,
+                                                            'number': number,
+                                                            'filename': title,
+                                                            'copies': copys,
+                                                            'two_sided': 'true' if duplex == 'd' else 'false'})
         if r.status_code == 200:
             pin = r.json()['pin']
             files = {'file': (title, open(pdf_path, 'rb'), 'application/pdf', {'Expires': '0'})}
