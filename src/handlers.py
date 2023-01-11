@@ -2,8 +2,14 @@
 # 2023
 
 import os
+import time
+import logging
 import requests
+import traceback
+import json
+import html
 
+import psycopg2
 import telegram
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackContext
@@ -13,6 +19,38 @@ import src.database_functions as db
 from src.answers import ans
 
 
+def handler(func):
+    async def wrapper(*args, **kwargs):
+        try:
+            await func(*args, **kwargs)
+        except psycopg2.Error as err:
+            logging.error('Database Error (longpull_loop), description:')
+            traceback.print_tb(err.__traceback__)
+            logging.error(err.args)
+            try:
+                logging.warning('Try to recconnect database...')
+                db.reconnect()
+                logging.warning('Database connected successful')
+                time.sleep(1)
+            except psycopg2.Error:
+                logging.error('Recconnect database failed')
+                time.sleep(10)
+
+        except Exception as err:
+            logging.error('BaseException (longpull_loop), description:')
+            traceback.print_tb(err.__traceback__)
+            logging.error(str(err.args))
+            time.sleep(5)
+    return wrapper
+
+
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logging.error(msg="Exception while handling an update:", exc_info=context.error)
+    await context.bot.send_message(
+        chat_id=update.effective_user.id, text=ans['im_broken'], parse_mode=telegram.constants.ParseMode('HTML'))
+
+
+@handler
 async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton(ans['conf'], callback_data='want_confident')]]
     text = ans['help']
@@ -25,6 +63,7 @@ async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                     disable_web_page_preview=True)
 
 
+@handler
 async def handler_button(update: Update, context: CallbackContext) -> None:
     if update.callback_query.data == 'want_instruction':
         text = ans['help']
@@ -62,10 +101,12 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
                                                   parse_mode=telegram.constants.ParseMode('HTML'))
 
 
+@handler
 async def handler_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans['help'])
 
 
+@handler
 async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update, context)
     if requisites is None:
@@ -76,14 +117,17 @@ async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                         parse_mode=telegram.constants.ParseMode('HTML'))
 
 
+@handler
 async def handler_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans['history_not_implement'])
 
 
+@handler
 async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans['unknown_command'])
 
 
+@handler
 async def handler_mismatch_doctype(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans['only_pdf'])
 
@@ -170,6 +214,7 @@ async def __print_confirm(update, context):
                                                   parse_mode=telegram.constants.ParseMode('HTML'))
 
 
+@handler
 async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     chat_id = update.message.chat.id
