@@ -41,6 +41,7 @@ def handler(func):
             traceback.print_tb(err.__traceback__)
             logging.error(str(err.args))
             time.sleep(5)
+
     return wrapper
 
 
@@ -57,10 +58,9 @@ async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if __auth(update, context) is None:
         text += ans['val_addition']
         keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='auth')])
-
-    await update.message.reply_text(text,
-                                    reply_markup=InlineKeyboardMarkup(keyboard),
-                                    disable_web_page_preview=True)
+    await context.bot.send_message(text,
+                                   reply_markup=InlineKeyboardMarkup(keyboard),
+                                   disable_web_page_preview=True)
 
 
 @handler
@@ -163,18 +163,18 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     pdf_path, uid = await __get_attachments(update, context)
-
     if os.path.exists(pdf_path):
         keyboard = [[InlineKeyboardButton(f'Копий: 1', callback_data=f'file_copys_1_s_{uid}'),
                      InlineKeyboardButton(f'Односторонняя печать', callback_data=f'file_duplex_1_s_{uid}')],
                     [InlineKeyboardButton('🖨 Отправить на печать!', callback_data=f'file_print_1_s_{uid}')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await context.bot.send_message(chat_id=update.message.chat.id,
-                                       text=ans['file_uploaded'].format(update.message.document.file_name),
-                                       reply_markup=reply_markup,
-                                       parse_mode=telegram.constants.ParseMode('HTML'))
+        await update.message.reply_text(text=ans['file_uploaded'].format(update.message.document.file_name),
+                                        reply_markup=reply_markup,
+                                        reply_to_message_id=update.message.id,
+                                        parse_mode=telegram.constants.ParseMode('HTML'))
     else:
-        await context.bot.send_message(chat_id=update.message.chat.id, text=ans['download_error'])
+        await update.message.reply_text(text=ans['download_error'],
+                                        reply_to_message_id=update.message.id)
 
 
 # async def __show_file_info(update, context):
