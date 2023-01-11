@@ -1,4 +1,4 @@
-# Marakulin Andrey @annndruha
+# Marakulin Andrey https://github.com/Annndruha
 # 2023
 
 ans = {

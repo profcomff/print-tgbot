@@ -1,3 +1,6 @@
+# Marakulin Andrey https://github.com/Annndruha
+# 2023
+
 import logging
 import telegram.ext.filters as filters
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler

@@ -1,4 +1,4 @@
-# Marakulin Andrey @annndruha
+# Marakulin Andrey https://github.com/Annndruha
 # 2023
 
 import os
@@ -85,7 +85,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update, context)
     if requisites is None:
         await context.bot.send_message(chat_id=update.message.chat.id,
-                                       text='❌ Документ не будет распечатан. ❌')
+                                       text='❌ Документ не принят, сначала авторизуйтесь: ❌')
         await context.bot.send_message(chat_id=update.message.chat.id,
                                        text=ans['val_need'])
         return
