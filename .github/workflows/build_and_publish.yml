@@ -6,7 +6,6 @@ on:
     tags:
       - 'v*'
 
-
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -54,7 +53,7 @@ jobs:
     environment:
       name: Testing
     env:
-      CONTAITER_NAME: print-tgbot-testing
+      CONTAITER_NAME: com_profcomff_tgbot_print_test
     permissions:
       packages: read
 
@@ -80,7 +79,7 @@ jobs:
           docker stop ${{ env.CONTAITER_NAME }} || true && docker rm ${{ env.CONTAITER_NAME }} || true
           docker run \
             --detach \
-            --restart always \
+            --restart on-failure:3 \
             --network=web \
             --env DB_DSN='${{ secrets.DB_DSN }}' \
             --env BOT_TOKEN='${{ secrets.BOT_TOKEN }}' \
@@ -95,9 +94,8 @@ jobs:
     runs-on: [ self-hosted, Linux ]
     environment:
       name: Production
-      url: https://auth.api.profcomff.com/
     env:
-      CONTAITER_NAME: com_profcomff_api_auth
+      CONTAITER_NAME: com_profcomff_tgbot_print
     permissions:
       packages: read
 
@@ -111,6 +109,9 @@ jobs:
             --rm \
             --network=web \
             --env DB_DSN=${{ secrets.DB_DSN }} \
+            --env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
+            --env MARKETING_URL=${{ vars.MARKETING_URL }} \
+            --env PRINT_URL=${{ vars.PRINT_URL }} \
             --name ${{ env.CONTAITER_NAME }}_migration \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
             alembic upgrade head
@@ -123,9 +124,8 @@ jobs:
             --restart always \
             --network=web \
             --env DB_DSN='${{ secrets.DB_DSN }}' \
-            --env MARKETING_URL='${{ secrets.MARKETING_URL }}' \
             --env BOT_TOKEN='${{ secrets.BOT_TOKEN }}' \
-            --env PDF_PATH='${{ secrets.PDF_PATH }}' \
-            --env PRINT_URL='${{ secrets.PRINT_URL }}' \
+            --env MARKETING_URL='${{ vars.MARKETING_URL }}' \
+            --env PRINT_URL='${{ vars.PRINT_URL }}' \
             --name ${{ env.CONTAITER_NAME }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
