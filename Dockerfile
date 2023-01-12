@@ -11,4 +11,4 @@ COPY ./${APP_NAME} /app/${APP_NAME}
 
 WORKDIR /app
 
-CMD ["python", "-m", "${APP_NAME}"]
+CMD ["python", "-m", "src"]
