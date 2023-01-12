@@ -23,7 +23,7 @@ class Base:
         return "{}({})".format(self.__class__.__name__, ', '.join(attrs))
 
 
-class TGUsers(Base):
+class TgUser(Base):
     tg_id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     surname = sqlalchemy.Column(sqlalchemy.String)
     number = sqlalchemy.Column(sqlalchemy.String)

@@ -15,27 +15,35 @@ from telegram.ext import ContextTypes, CallbackContext
 import config
 import src.database_functions as db
 from src.answers import ans
-
+from src.db import TgUser
 from src.settings import get_settings
+
 settings = get_settings()
+
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+
+engine = create_engine(url=settings.DB_DSN)
+Session = sessionmaker(bind=engine, autocommit=True)
+session = Session()
 
 
 def handler(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await func(update, context)
-        except psycopg2.Error as err:
-            logging.error('Database Error (wrapper), description:')
-            traceback.print_tb(err.__traceback__)
-            logging.error(err.args)
-            try:
-                logging.warning('Try to reconnect database...')
-                db.reconnect()
-                logging.warning('Database connected successful')
-                time.sleep(1)
-            except psycopg2.Error:
-                logging.error('Reconnect database failed')
-                time.sleep(10)
+        # except psycopg2.Error as err:
+        #     logging.error('Database Error (wrapper), description:')
+        #     traceback.print_tb(err.__traceback__)
+        #     logging.error(err.args)
+        #     try:
+        #         logging.warning('Try to reconnect database...')
+        #         db.reconnect()
+        #         logging.warning('Database connected successful')
+        #         time.sleep(1)
+        #     except psycopg2.Error:
+        #         logging.error('Reconnect database failed')
+        #         time.sleep(10)
 
         except Exception as err:
             await context.bot.send_message(
@@ -198,10 +206,10 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @handler
 async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
+    text = update.message.text  # TODO: ("'NoneType' object has no attribute 'text'",)
     chat_id = update.message.chat.id
     if text is None:
-        if db.get_user(chat_id) is None:
+        if session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none() is None:
             await context.bot.send_message(chat_id=chat_id, text=ans['val_need'])
         else:
             await context.bot.send_message(chat_id=chat_id, text=ans['val_update_fail'])
@@ -212,19 +220,25 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
         number = text.split('\n')[1].strip()
 
         r = requests.get(settings.PRINT_URL + '/is_union_member', params=dict(surname=surname, v=1, number=number))
-        data = db.get_user(update.effective_user.id)
+        data: TgUser = session.query(TgUser).filter(TgUser.tg_id == update.effective_user.id).one_or_none()
         if r.json() and data is None:
-            db.add_user(chat_id, surname, number)
+            session.add(TgUser(tg_id=chat_id, surname=surname, number=number))
+            session.flush()
+            # TgUser
+            # db.add_user(chat_id, surname, number)
             await context.bot.send_message(chat_id=chat_id, text=ans['val_pass'])
             return True
         elif r.json() and data is not None:
-            db.update_user(chat_id, surname, number)
+            # db.update_user(chat_id, surname, number)
+            # tguser = session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none()
+            data.surname = surname
+            data.number = number
             await context.bot.send_message(chat_id=chat_id, text=ans['val_update_pass'])
             return True
         elif r.json() is False:
             await context.bot.send_message(chat_id=chat_id, text=ans['val_fail'])
     else:
-        if db.get_user(chat_id) is None:
+        if session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none() is None:
             await context.bot.send_message(chat_id=chat_id, text=ans['val_need'])
         else:
             await context.bot.send_message(chat_id=chat_id, text=ans['val_update_fail'])
@@ -245,8 +259,8 @@ async def __get_attachments(update, context):
 
 def __auth(update):
     chat_id = update.effective_user.id
-    if db.get_user(chat_id) is not None:
-        tg_id, surname, number = db.get_user(chat_id)
-        r = requests.get(settings.PRINT_URL + '/is_union_member', params=dict(surname=surname, number=number, v=1))
+    if session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none() is not None:
+        tguser: TgUser = session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none()
+        r = requests.get(settings.PRINT_URL + '/is_union_member', params=dict(surname=tguser.surname, number=tguser.number, v=1))
         if r.json():
-            return tg_id, surname, number
+            return tguser.tg_id, tguser.surname, tguser.number
