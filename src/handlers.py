@@ -8,9 +8,12 @@ import requests
 import traceback
 
 # import psycopg2
-import telegram
+
+from telegram.constants import ParseMode
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackContext
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 # import config
 from src.answers import ans
@@ -19,8 +22,7 @@ from src.settings import get_settings
 
 settings = get_settings()
 
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
+
 
 engine = create_engine(url=settings.DB_DSN)
 Session = sessionmaker(bind=engine, autocommit=True)
@@ -47,7 +49,7 @@ def handler(func):
         except Exception as err:
             await context.bot.send_message(
                 chat_id=update.effective_user.id, text=ans['im_broken'],
-                parse_mode=telegram.constants.ParseMode('HTML'))
+                parse_mode=ParseMode('HTML'))
             logging.error('Exception (wrapper), description:')
             traceback.print_tb(err.__traceback__)
             logging.error(str(err.args))
@@ -59,7 +61,7 @@ def handler(func):
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.error(msg="Exception while handling an update:", exc_info=context.error)
     await context.bot.send_message(
-        chat_id=update.effective_user.id, text=ans['im_broken'], parse_mode=telegram.constants.ParseMode('HTML'))
+        chat_id=update.effective_user.id, text=ans['im_broken'], parse_mode=ParseMode('HTML'))
 
 
 @handler
@@ -106,7 +108,7 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
     await update.callback_query.edit_message_text(text=text,
                                                   reply_markup=reply_markup,
                                                   disable_web_page_preview=True,
-                                                  parse_mode=telegram.constants.ParseMode('HTML'))
+                                                  parse_mode=ParseMode('HTML'))
 
 
 @handler
@@ -122,7 +124,7 @@ async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         tg_id, surname, number = requisites
         await update.message.reply_text(ans['val_info'].format(tg_id, surname, number),
-                                        parse_mode=telegram.constants.ParseMode('HTML'))
+                                        parse_mode=ParseMode('HTML'))
 
 
 @handler
@@ -195,11 +197,11 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=reply_markup,
                 reply_to_message_id=update.message.id,
                 disable_web_page_preview=True,
-                parse_mode=telegram.constants.ParseMode('HTML'))
+                parse_mode=ParseMode('HTML'))
             return
 
     await update.callback_query.edit_message_text(text=ans['print_err'],
-                                                  parse_mode=telegram.constants.ParseMode('HTML'))
+                                                  parse_mode=ParseMode('HTML'))
 
 
 @handler
@@ -259,6 +261,7 @@ def __auth(update):
     chat_id = update.effective_user.id
     if session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none() is not None:
         tguser: TgUser = session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none()
-        r = requests.get(settings.PRINT_URL + '/is_union_member', params=dict(surname=tguser.surname, number=tguser.number, v=1))
+        r = requests.get(settings.PRINT_URL + '/is_union_member',
+                         params=dict(surname=tguser.surname, number=tguser.number, v=1))
         if r.json():
             return tguser.tg_id, tguser.surname, tguser.number
