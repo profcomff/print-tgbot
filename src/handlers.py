@@ -7,13 +7,12 @@ import logging
 import requests
 import traceback
 
-import psycopg2
+# import psycopg2
 import telegram
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackContext
 
-import config
-import src.database_functions as db
+# import config
 from src.answers import ans
 from src.db import TgUser
 from src.settings import get_settings
