@@ -141,7 +141,6 @@ async def handler_mismatch_doctype(update: Update, context: ContextTypes.DEFAULT
 
 
 async def __print_settings_solver(update):
-    # filename = update.callback_query.message.reply_to_message.document.file_name
     _, button, pin = update.callback_query.data.split('_')
 
     r = requests.get(settings.PRINT_URL + f'''/file/{pin}''')
@@ -152,7 +151,7 @@ async def __print_settings_solver(update):
         return
 
     if button == 'copies':
-        options['copies'] += 1
+        options['copies'] = options['copies'] % 5 + 1
     if button == 'twosided':
         options['two_sided'] = not options['two_sided']
 
