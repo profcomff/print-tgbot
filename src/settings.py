@@ -1,14 +1,15 @@
-from pydantic import BaseSettings, PostgresDsn, SecretStr
+import os
+from pydantic import BaseSettings, PostgresDsn, AnyUrl
 from functools import lru_cache
 
 
 class Settings(BaseSettings):
     """Application settings"""
-    BOT_TOKEN: SecretStr
+    BOT_TOKEN: str
     DB_DSN: PostgresDsn
+    MARKETING_URL: AnyUrl
+    PRINT_URL: AnyUrl
     PDF_PATH = 'userdata'
-    MARKETING_URL = 'https://marketing.api.test.profcomff.com/'
-    PRINT_URL = 'https://printer.api.test.profcomff.com'
 
     class Config:
         """Pydantic BaseSettings config"""
