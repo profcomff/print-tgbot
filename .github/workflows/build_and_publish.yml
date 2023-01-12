@@ -17,7 +17,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -56,16 +55,13 @@ jobs:
       CONTAITER_NAME: com_profcomff_tgbot_print_test
     permissions:
       packages: read
-
     steps:
       - name: Pull new version
         run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
-
       - name: Migrate DB
         run: |
           docker run \
             --rm \
-            --network=web \
             --env DB_DSN=${{ secrets.DB_DSN }} \
             --env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
             --env MARKETING_URL=${{ vars.MARKETING_URL }} \
@@ -74,19 +70,18 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test \
             alembic upgrade head
       - name: Run new version
-        id: run_test
         run: |
           docker stop ${{ env.CONTAITER_NAME }} || true && docker rm ${{ env.CONTAITER_NAME }} || true
           docker run \
             --detach \
             --restart on-failure:3 \
-            --network=web \
             --env DB_DSN='${{ secrets.DB_DSN }}' \
             --env BOT_TOKEN='${{ secrets.BOT_TOKEN }}' \
             --env MARKETING_URL='${{ vars.MARKETING_URL }}' \
             --env PRINT_URL='${{ vars.PRINT_URL }}' \
             --name ${{ env.CONTAITER_NAME }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
+
   deploy-production:
     name: Deploy Production
     needs: build-and-push-image
@@ -98,16 +93,13 @@ jobs:
       CONTAITER_NAME: com_profcomff_tgbot_print
     permissions:
       packages: read
-
     steps:
       - name: Pull new version
         run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
       - name: Migrate DB
         run: |
           docker run \
             --rm \
-            --network=web \
             --env DB_DSN=${{ secrets.DB_DSN }} \
             --env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
             --env MARKETING_URL=${{ vars.MARKETING_URL }} \
@@ -116,13 +108,11 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
             alembic upgrade head
       - name: Run new version
-        id: run_test
         run: |
           docker stop ${{ env.CONTAITER_NAME }} || true && docker rm ${{ env.CONTAITER_NAME }} || true
           docker run \
             --detach \
             --restart always \
-            --network=web \
             --env DB_DSN='${{ secrets.DB_DSN }}' \
             --env BOT_TOKEN='${{ secrets.BOT_TOKEN }}' \
             --env MARKETING_URL='${{ vars.MARKETING_URL }}' \
