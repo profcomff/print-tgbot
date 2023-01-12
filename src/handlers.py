@@ -217,19 +217,9 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif r.json() and data is not None:
             db.update_user(chat_id, surname, number)
             await context.bot.send_message(chat_id=chat_id, text=ans['val_update_pass'])
-            # log.register(
-            #     vk_id=user.user_id,
-            #     surname=surname,
-            #     number=number,
-            # )
             return True
         elif r.json() is False:
             await context.bot.send_message(chat_id=chat_id, text=ans['val_fail'])
-            # log.register_exc_wrong(
-            #     vk_id=user.user_id,
-            #     surname=surname,
-            #     number=number,
-            # )
     else:
         if db.get_user(chat_id) is None:
             await context.bot.send_message(chat_id=chat_id, text=ans['val_need'])
