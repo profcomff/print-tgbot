@@ -80,10 +80,7 @@ jobs:
             --restart always \
             --network=web \
             --env DB_DSN='${{ secrets.DB_DSN }}' \
-            --env MARKETING_URL='${{ secrets.MARKETING_URL }}' \
             --env BOT_TOKEN='${{ secrets.BOT_TOKEN }}' \
-            --env PDF_PATH='${{ secrets.PDF_PATH }}' \
-            --env PRINT_URL='${{ secrets.PRINT_URL }}' \
             --name ${{ env.CONTAITER_NAME }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
   deploy-production:

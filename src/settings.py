@@ -5,10 +5,10 @@ from functools import lru_cache
 class Settings(BaseSettings):
     """Application settings"""
     BOT_TOKEN: str
-    PDF_PATH: DirectoryPath
-    MARKETING_URL: AnyUrl
-    PRINT_URL: AnyUrl
     DB_DSN: PostgresDsn
+    PDF_PATH = 'userdata'
+    MARKETING_URL = 'https://marketing.api.test.profcomff.com/'
+    PRINT_URL = 'https://printer.api.test.profcomff.com'
 
     class Config:
         """Pydantic BaseSettings config"""
