@@ -1,10 +1,10 @@
-from pydantic import BaseSettings, PostgresDsn, AnyUrl, DirectoryPath
+from pydantic import BaseSettings, PostgresDsn, SecretStr
 from functools import lru_cache
 
 
 class Settings(BaseSettings):
     """Application settings"""
-    BOT_TOKEN: str
+    BOT_TOKEN: SecretStr
     DB_DSN: PostgresDsn
     PDF_PATH = 'userdata'
     MARKETING_URL = 'https://marketing.api.test.profcomff.com/'
