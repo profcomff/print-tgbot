@@ -5,15 +5,17 @@ FROM python:3.11.1
 ENV APP_NAME=src
 #ENV APP_MODULE=${APP_NAME}.routes.base:app
 
+ADD ./ /app
+WORKDIR /app
 
-COPY ./requirements.txt /app/
+#COPY ./requirements.txt /app/
 RUN pip install -U -r /app/requirements.txt
 
-COPY ./alembic.ini /alembic.ini
-COPY ./migrations /migrations/
+#COPY ./alembic.ini /alembic.ini
+#COPY ./migrations /migrations/
 
-COPY ./${APP_NAME} /app/${APP_NAME}
-WORKDIR /app
+#COPY ./${APP_NAME} /app/${APP_NAME}
+
 CMD ["python", "-m", "src"]
 
 # Base image
