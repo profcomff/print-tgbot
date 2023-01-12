@@ -3,9 +3,9 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
-from src.settings import get_settings
+from ..src.settings import get_settings
 from alembic import context
-from src.db import Base
+from ..src.db import Base
 # from {{cookiecutter.module_name}}.models.base import Base
 # from {{cookiecutter.module_name}}.settings import get_settings
 
