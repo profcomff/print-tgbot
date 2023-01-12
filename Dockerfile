@@ -2,7 +2,7 @@
 # 2021
 
 # Base image
-FROM python:3.11.0
+FROM python:3.11.1
 
 # Create directoris inside container
 ADD ./ /print-bot
@@ -11,7 +11,7 @@ WORKDIR /print-bot
 # Install libs from requirements
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Specify the port number the container should expose 
+# Specify the port number the container should expose
 EXPOSE 42
 
 # Run the file

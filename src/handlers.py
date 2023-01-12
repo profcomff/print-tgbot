@@ -16,6 +16,9 @@ import config
 import src.database_functions as db
 from src.answers import ans
 
+from src.settings import get_settings
+settings = get_settings()
+
 
 def handler(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -134,7 +137,7 @@ async def __print_settings_solver(update):
     # filename = update.callback_query.message.reply_to_message.document.file_name
     _, button, pin = update.callback_query.data.split('_')
 
-    r = requests.get(config.PRINT_URL + f'''/file/{pin}''')
+    r = requests.get(settings.PRINT_URL + f'''/file/{pin}''')
     if r.status_code == 200:
         options = r.json()['options']
     else:
@@ -146,7 +149,7 @@ async def __print_settings_solver(update):
     if button == 'twosided':
         options['two_sided'] = not options['two_sided']
 
-    r = requests.patch(config.PRINT_URL + f'''/file/{pin}''', json={'options': options})
+    r = requests.patch(settings.PRINT_URL + f'''/file/{pin}''', json={'options': options})
     if r.status_code != 200:
         await update.callback_query.message.reply_text('Сервер не ответил, настройки не изменены, попробуйте позже.')
         return
@@ -172,12 +175,12 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(text=ans['download_error'], reply_to_message_id=update.message.id)
         return
 
-    r = requests.post(config.PRINT_URL + '/file',
+    r = requests.post(settings.PRINT_URL + '/file',
                       json={'surname': requisites[1], 'number': requisites[2], 'filename': filename})
     if r.status_code == 200:
         pin = r.json()['pin']
         files = {'file': (filename, open(pdf_path, 'rb'), 'application/pdf', {'Expires': '0'})}
-        rfile = requests.post(config.PRINT_URL + '/file/' + pin, files=files)
+        rfile = requests.post(settings.PRINT_URL + '/file/' + pin, files=files)
         if rfile.status_code == 200:
             reply_markup = InlineKeyboardMarkup(
                 [[InlineKeyboardButton(f'Настройки печати', callback_data=f'print_settings_{pin}')]])
@@ -208,7 +211,7 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
         surname = text.split('\n')[0].strip()
         number = text.split('\n')[1].strip()
 
-        r = requests.get(config.PRINT_URL + '/is_union_member', params=dict(surname=surname, v=1, number=number))
+        r = requests.get(settings.PRINT_URL + '/is_union_member', params=dict(surname=surname, v=1, number=number))
         data = db.get_user(update.effective_user.id)
         if r.json() and data is None:
             db.add_user(chat_id, surname, number)
@@ -228,12 +231,12 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def __get_attachments(update, context):
-    if not os.path.exists(config.PDF_PATH):
-        os.makedirs(config.PDF_PATH)
-    if not os.path.exists(os.path.join(config.PDF_PATH, str(update.message.chat.id))):
-        os.makedirs(os.path.join(config.PDF_PATH, str(update.message.chat.id)))
-    path_to_save = os.path.join(config.PDF_PATH, str(update.message.chat.id), update.message.document.file_name)
-    # path_to_save = os.path.join(config.PDF_PATH, update.message.document.file_unique_id + '.pdf')
+    if not os.path.exists(settings.PDF_PATH):
+        os.makedirs(settings.PDF_PATH)
+    if not os.path.exists(os.path.join(settings.PDF_PATH, str(update.message.chat.id))):
+        os.makedirs(os.path.join(settings.PDF_PATH, str(update.message.chat.id)))
+    path_to_save = os.path.join(settings.PDF_PATH, str(update.message.chat.id), update.message.document.file_name)
+    # path_to_save = os.path.join(settings.PDF_PATH, update.message.document.file_unique_id + '.pdf')
     # update.message.document.file_size # TODO: Check size
     file = await context.bot.get_file(update.message.document.file_id)
     await file.download_to_drive(custom_path=path_to_save)
@@ -244,6 +247,6 @@ def __auth(update):
     chat_id = update.effective_user.id
     if db.get_user(chat_id) is not None:
         tg_id, surname, number = db.get_user(chat_id)
-        r = requests.get(config.PRINT_URL + '/is_union_member', params=dict(surname=surname, number=number, v=1))
+        r = requests.get(settings.PRINT_URL + '/is_union_member', params=dict(surname=surname, number=number, v=1))
         if r.json():
             return tg_id, surname, number

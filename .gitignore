@@ -1,3 +1,4 @@
 auth.ini
 userdata
 logs.txt
+.env

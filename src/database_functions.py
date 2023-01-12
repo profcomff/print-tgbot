@@ -1,22 +1,18 @@
 ﻿# Marakulin Andrey @annndruha
 # 2023
 import psycopg2
-import config
+# import settings
+from src.settings import get_settings
+settings = get_settings()
 
-connection = psycopg2.connect(dbname=config.DBNAME,
-                              user=config.DBUSER,
-                              password=config.DBPASSWORD,
-                              host=config.DBHOST,
-                              port=config.DBPORT)
+
+
+connection = psycopg2.connect(dsn=settings.DB_DSN)
 
 
 def reconnect():
     global connection
-    connection = psycopg2.connect(dbname=config.DBNAME,
-                                  user=config.DBUSER,
-                                  password=config.DBPASSWORD,
-                                  host=config.DBHOST,
-                                  port=config.DBPORT)
+    connection = psycopg2.connect(dsn=settings.DB_DSN)
 
 
 def check_and_reconnect():
