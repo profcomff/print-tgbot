@@ -79,6 +79,7 @@ async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @handler
 async def handler_button(update: Update, context: CallbackContext) -> None:
     if update.callback_query.data == 'want_instruction':
+        logging.info('button want_instruction pressed')
         text = ans['help']
         keyboard = [[InlineKeyboardButton(ans['conf'], callback_data='want_confident')]]
         if __auth(update) is None:
@@ -87,6 +88,7 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
         reply_markup = InlineKeyboardMarkup(keyboard)
 
     elif update.callback_query.data == 'want_confident':
+        logging.info('button want_instruction pressed')
         text = ans['conf_full']
         keyboard = [[InlineKeyboardButton(ans['back'], callback_data='want_instruction')]]
         if __auth(update) is None:
@@ -105,6 +107,7 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
         reply_markup = None
 
     await update.callback_query.answer()
+    logging.info('im here')
     await update.callback_query.edit_message_text(text=text,
                                                   reply_markup=reply_markup,
                                                   disable_web_page_preview=True,
