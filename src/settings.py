@@ -1,4 +1,3 @@
-import os
 from pydantic import BaseSettings, PostgresDsn, AnyUrl
 from functools import lru_cache
 

@@ -68,6 +68,9 @@ jobs:
             --rm \
             --network=web \
             --env DB_DSN=${{ secrets.DB_DSN }} \
+            --env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
+            --env MARKETING_URL=${{ vars.MARKETING_URL }} \
+            --env PRINT_URL=${{ vars.PRINT_URL }} \
             --name ${{ env.CONTAITER_NAME }}_migration \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test \
             alembic upgrade head
@@ -81,6 +84,8 @@ jobs:
             --network=web \
             --env DB_DSN='${{ secrets.DB_DSN }}' \
             --env BOT_TOKEN='${{ secrets.BOT_TOKEN }}' \
+            --env MARKETING_URL='${{ vars.MARKETING_URL }}' \
+            --env PRINT_URL='${{ vars.PRINT_URL }}' \
             --name ${{ env.CONTAITER_NAME }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
   deploy-production:
