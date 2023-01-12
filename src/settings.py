@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     DB_DSN: PostgresDsn
     MARKETING_URL: AnyUrl
     PRINT_URL: AnyUrl
-    PDF_PATH = 'userdata'
+    PDF_PATH: str = 'userdata'
 
     class Config:
         """Pydantic BaseSettings config"""

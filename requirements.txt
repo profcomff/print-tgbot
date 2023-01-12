@@ -1,5 +1,5 @@
-psycopg2
 requests
+psycopg2-binary
 python-telegram-bot
 pydantic
 SQLAlchemy
