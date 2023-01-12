@@ -1,6 +1,6 @@
 psycopg2
 requests
-telegram
+python-telegram-bot
 pydantic
 SQLAlchemy
 alembic
