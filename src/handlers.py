@@ -13,9 +13,9 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackContext
 
 # import config
-from src.answers import ans
-from src.db import TgUser
-from src.settings import get_settings
+from answers import ans
+from db import TgUser
+from settings import get_settings
 
 settings = get_settings()
 

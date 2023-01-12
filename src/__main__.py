@@ -6,9 +6,9 @@ import telegram.ext.filters as filters
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler
 
 # import config
-from src.handlers import handler_start, handler_unknown_command, handler_print, handler_mismatch_doctype, \
+from handlers import handler_start, handler_unknown_command, handler_print, handler_mismatch_doctype, \
     handler_register, handler_button, handler_help, handler_auth, handler_history, error_handler
-from src.settings import get_settings
+from settings import get_settings
 settings = get_settings()
 
 logging.basicConfig(
