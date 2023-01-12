@@ -3,11 +3,11 @@
 
 import os
 import time
+import json
+import html
 import logging
 import requests
 import traceback
-import json
-import html
 
 import psycopg2
 import telegram
@@ -20,9 +20,9 @@ from src.answers import ans
 
 
 def handler(func):
-    async def wrapper(*args, **kwargs):
+    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
-            await func(*args, **kwargs)
+            await func(update, context)
         except psycopg2.Error as err:
             logging.error('Database Error (longpull_loop), description:')
             traceback.print_tb(err.__traceback__)
@@ -37,11 +37,13 @@ def handler(func):
                 time.sleep(10)
 
         except Exception as err:
+            await context.bot.send_message(
+                chat_id=update.effective_user.id, text=ans['im_broken'],
+                parse_mode=telegram.constants.ParseMode('HTML'))
             logging.error('BaseException (longpull_loop), description:')
             traceback.print_tb(err.__traceback__)
             logging.error(str(err.args))
             time.sleep(5)
-
     return wrapper
 
 
@@ -137,26 +139,26 @@ async def __print_settings_solver(update, context):
     r = requests.get(config.PRINT_URL + f'''/file/{pin}''')
     if r.status_code == 200:
         options = r.json()['options']
+        # print(r.elapsed.total_seconds())
     else:
         await update.callback_query.message.reply_text('Сервер не ответил, попробуйте позже.')
         return
 
+    print('FROM:', button, 'Двухсторонняя печать' if options['two_sided'] else 'Односторонняя печать')
 
     if button == 'copies':
         options['copies'] += 1
-        r = requests.patch(config.PRINT_URL + f'''/file/{pin}''', json={'options': options})
-        print(r.status_code)
-    elif button == 'twosided':
+    if button == 'twosided':
         options['two_sided'] = not options['two_sided']
-        r = requests.patch(config.PRINT_URL + f'''/file/{pin}''', json={'options': options})
-        print(r.status_code)
+
+    r = requests.patch(config.PRINT_URL + f'''/file/{pin}''', json={'options': options})
+    # print(r.elapsed.total_seconds())
     if r.status_code != 200:
-        await update.callback_query.message.reply_text('Сервер не ответил, попробуйте позже.')
+        await update.callback_query.message.reply_text('Сервер не ответил, настройки не изменены, попробуйте позже.')
         return
 
-    # TODO: Fix error and strange behaviour
     sidetest = 'Двухсторонняя печать' if options['two_sided'] else 'Односторонняя печать'
-    print(button, options['two_sided'], sidetest)
+    print('TO:', button, sidetest)
 
 
     keyboard = [[InlineKeyboardButton(f'Копий: {options["copies"]}', callback_data=f'print_copies_{pin}')],
