@@ -1,18 +1,18 @@
 # Marakulin Andrey https://github.com/Annndruha
 # 2023
 
+import logging
 import os
 import time
-import logging
-import requests
 import traceback
 
-from telegram.constants import ParseMode
-from telegram.error import TelegramError
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, CallbackContext
+import requests
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ParseMode
+from telegram.error import TelegramError
+from telegram.ext import ContextTypes, CallbackContext
 
 from src import marketing
 from src.answers import ans
@@ -48,7 +48,21 @@ async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 @handler
-async def handler_button(update: Update, context: CallbackContext) -> None:
+async def handler_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(ans['help'], disable_web_page_preview=True, parse_mode=ParseMode('HTML'))
+
+
+@handler
+async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    requisites = __auth(update)
+    if requisites is None:
+        await update.message.reply_text(ans['val_need'])
+    else:
+        await update.message.reply_text(ans['val_info'].format(*requisites), parse_mode=ParseMode('HTML'))
+
+
+@handler
+async def handler_button_browser(update: Update, context: CallbackContext) -> None:
     if update.callback_query.data == 'to_hello':
         keyboard_base = [[InlineKeyboardButton(ans['about'], callback_data='to_about')]]
         text, reply_markup = __change_message_by_auth(update, ans['hello'], keyboard_base)
@@ -74,62 +88,11 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
 
 
 @handler
-async def handler_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(ans['help'], disable_web_page_preview=True, parse_mode=ParseMode('HTML'))
-
-
-@handler
-async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    requisites = __auth(update)
-    if requisites is None:
-        await update.message.reply_text(ans['val_need'])
-    else:
-        await update.message.reply_text(ans['val_info'].format(*requisites), parse_mode=ParseMode('HTML'))
-
-
-@handler
 async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans['unknown_command'])
 
 
 @handler
-async def handler_mismatch_doctype(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(ans['only_pdf'])
-    marketing.print_exc_format(tg_id=update.message.chat_id)
-
-
-async def __print_settings_solver(update):
-    _, button, pin = update.callback_query.data.split('_')
-
-    r = requests.get(settings.PRINT_URL + f'''/file/{pin}''')
-    if r.status_code == 200:
-        options = r.json()['options']
-    else:
-        await update.callback_query.message.reply_text(ans['settings_change_fail'])
-        return
-
-    if button == 'copies':
-        options['copies'] = options['copies'] % 5 + 1
-    if button == 'twosided':
-        options['two_sided'] = not options['two_sided']
-
-    r = requests.patch(settings.PRINT_URL + f'''/file/{pin}''', json={'options': options})
-    if r.status_code != 200:
-        await update.callback_query.message.reply_text(ans['settings_change_fail'])
-        return
-
-    keyboard = [
-        [InlineKeyboardButton(f'{ans["kb_print_copies"]} {options["copies"]}', callback_data=f'print_copies_{pin}')],
-        [InlineKeyboardButton(ans['kb_print_two_side'] if options['two_sided'] else ans['kb_print_side'],
-                              callback_data=f'print_twosided_{pin}')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    if ans['settings_warning'] not in update.callback_query.message.text_html:
-        text = update.callback_query.message.text_html + ans['settings_warning']
-        await update.callback_query.edit_message_text(text=text, parse_mode=ParseMode('HTML'))
-    await update.callback_query.edit_message_reply_markup(reply_markup=reply_markup)
-
-
 async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update)
     if requisites is None:
@@ -143,7 +106,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                         reply_to_message_id=update.message.id,
                                         parse_mode=ParseMode('HTML'))
         return
-    if not os.path.exists(pdf_path):
+    except FileNotFoundError:
         await update.message.reply_text(text=ans['download_error'], reply_to_message_id=update.message.id)
         return
 
@@ -167,6 +130,12 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(chat_id=update.effective_user.id,
                                    text=ans['print_err'], parse_mode=ParseMode('HTML'))
+
+
+@handler
+async def handler_mismatch_doctype(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(ans['only_pdf'])
+    marketing.print_exc_format(tg_id=update.message.chat_id)
 
 
 @handler
@@ -208,21 +177,36 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=chat_id, text=ans['val_update_fail'])
 
 
-async def __get_attachments(update, context):
-    if not os.path.exists(settings.PDF_PATH):
-        os.makedirs(settings.PDF_PATH)
-    if not os.path.exists(os.path.join(settings.PDF_PATH, str(update.message.chat.id))):
-        os.makedirs(os.path.join(settings.PDF_PATH, str(update.message.chat.id)))
-    path_to_save = os.path.join(settings.PDF_PATH, str(update.message.chat.id), update.message.document.file_name)
-    if update.message.document.file_size / 1024 ** 2 > settings.MAX_PDF_SIZE_MB:
-        raise FileSizeError
-    file = await context.bot.get_file(update.message.document.file_id)
-    await file.download_to_drive(custom_path=path_to_save)
-    return path_to_save, update.message.document.file_name
+async def __print_settings_solver(update):
+    _, button, pin = update.callback_query.data.split('_')
 
+    r = requests.get(settings.PRINT_URL + f'''/file/{pin}''')
+    if r.status_code == 200:
+        options = r.json()['options']
+    else:
+        await update.callback_query.message.reply_text(ans['settings_change_fail'])
+        return
 
-class FileSizeError(Exception):
-    pass
+    if button == 'copies':
+        options['copies'] = options['copies'] % 5 + 1
+    if button == 'twosided':
+        options['two_sided'] = not options['two_sided']
+
+    r = requests.patch(settings.PRINT_URL + f'''/file/{pin}''', json={'options': options})
+    if r.status_code != 200:
+        await update.callback_query.message.reply_text(ans['settings_change_fail'])
+        return
+
+    keyboard = [
+        [InlineKeyboardButton(f'{ans["kb_print_copies"]} {options["copies"]}', callback_data=f'print_copies_{pin}')],
+        [InlineKeyboardButton(ans['kb_print_two_side'] if options['two_sided'] else ans['kb_print_side'],
+                              callback_data=f'print_twosided_{pin}')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    if ans['settings_warning'] not in update.callback_query.message.text_html:
+        text = update.callback_query.message.text_html + ans['settings_warning']
+        await update.callback_query.edit_message_text(text=text, parse_mode=ParseMode('HTML'))
+    await update.callback_query.edit_message_reply_markup(reply_markup=reply_markup)
 
 
 def __auth(update):
@@ -240,3 +224,22 @@ def __change_message_by_auth(update, text, keyboard):
         text += ans['val_addition']
         keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='to_auth')])
     return text, InlineKeyboardMarkup(keyboard)
+
+
+class FileSizeError(Exception):
+    pass
+
+
+async def __get_attachments(update, context):
+    if not os.path.exists(settings.PDF_PATH):
+        os.makedirs(settings.PDF_PATH)
+    if not os.path.exists(os.path.join(settings.PDF_PATH, str(update.message.chat.id))):
+        os.makedirs(os.path.join(settings.PDF_PATH, str(update.message.chat.id)))
+    path_to_save = os.path.join(settings.PDF_PATH, str(update.message.chat.id), update.message.document.file_name)
+    if update.message.document.file_size / 1024 ** 2 > settings.MAX_PDF_SIZE_MB:
+        raise FileSizeError
+    file = await context.bot.get_file(update.message.document.file_id)
+    await file.download_to_drive(custom_path=path_to_save)
+    if not os.path.exists(path_to_save):
+        raise FileNotFoundError
+    return path_to_save, update.message.document.file_name
