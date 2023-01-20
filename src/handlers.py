@@ -7,7 +7,7 @@ import logging
 import requests
 import traceback
 
-import psycopg2
+
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -15,7 +15,7 @@ from telegram.ext import ContextTypes, CallbackContext
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# import config
+
 from src.answers import ans
 from src.db import TgUser
 from src.settings import get_settings
@@ -45,11 +45,11 @@ def handler(func):
 
 @handler
 async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[InlineKeyboardButton(ans['conf'], callback_data='want_confident')]]
+    keyboard = [[InlineKeyboardButton(ans['about'], callback_data='to_about')]]
     text = ans['hello']
     if __auth(update) is None:
         text += ans['val_addition']
-        keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='auth')])
+        keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='to_auth')])
     await update.message.reply_text(text=text,
                                     reply_markup=InlineKeyboardMarkup(keyboard),
                                     disable_web_page_preview=True)
@@ -57,30 +57,30 @@ async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @handler
 async def handler_button(update: Update, context: CallbackContext) -> None:
-    if update.callback_query.data == 'want_instruction':
+    if update.callback_query.data == 'to_hello':
         text = ans['hello']
-        keyboard = [[InlineKeyboardButton(ans['conf'], callback_data='want_confident')]]
+        keyboard = [[InlineKeyboardButton(ans['about'], callback_data='to_about')]]
         if __auth(update) is None:
-            keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='auth')])
+            keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='to_auth')])
             text += ans['val_addition']
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-    elif update.callback_query.data == 'want_confident':
-        text = ans['conf_full']
-        keyboard = [[InlineKeyboardButton(ans['back'], callback_data='want_instruction')]]
+    elif update.callback_query.data == 'to_about':
+        text = ans['help']
+        keyboard = [[InlineKeyboardButton(ans['back'], callback_data='to_hello')]]
         if __auth(update) is None:
-            keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='auth')])
+            keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='to_auth')])
             text += ans['val_addition']
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-    elif update.callback_query.data == 'auth':
+    elif update.callback_query.data == 'to_auth':
         text = ans['val_need']
         reply_markup = None
     elif update.callback_query.data.startswith('print_'):
         await __print_settings_solver(update)
         return
     else:
-        text = ans['unknown_query']
+        text = ans['unknown_keyboard_payload']
         reply_markup = None
 
     await update.callback_query.answer()
@@ -128,7 +128,7 @@ async def __print_settings_solver(update):
     if r.status_code == 200:
         options = r.json()['options']
     else:
-        await update.callback_query.message.reply_text('Сервер не ответил, попробуйте позже.')
+        await update.callback_query.message.reply_text(ans['settings_change_fail'])
         return
 
     if button == 'copies':
@@ -138,11 +138,11 @@ async def __print_settings_solver(update):
 
     r = requests.patch(settings.PRINT_URL + f'''/file/{pin}''', json={'options': options})
     if r.status_code != 200:
-        await update.callback_query.message.reply_text('Сервер не ответил, настройки не изменены, попробуйте позже.')
+        await update.callback_query.message.reply_text(ans['settings_change_fail'])
         return
 
-    keyboard = [[InlineKeyboardButton(f'Копий: {options["copies"]}', callback_data=f'print_copies_{pin}')],
-                [InlineKeyboardButton('Двухсторонняя печать' if options['two_sided'] else 'Односторонняя печать',
+    keyboard = [[InlineKeyboardButton(f'{ans["kb_print_copies"]} {options["copies"]}', callback_data=f'print_copies_{pin}')],
+                [InlineKeyboardButton(ans['kb_print_twoside'] if options['two_sided'] else ans['kb_print_side'],
                                       callback_data=f'print_twosided_{pin}')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.callback_query.edit_message_reply_markup(reply_markup=reply_markup)
@@ -153,8 +153,6 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if requisites is None:
         await context.bot.send_message(chat_id=update.message.chat.id,
                                        text=ans['doc_not_accepted'])
-        # await context.bot.send_message(chat_id=update.message.chat.id,
-        #                                text=ans['val_need'])
         return
     try:
         pdf_path, filename = await __get_attachments(update, context)
@@ -175,7 +173,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         rfile = requests.post(settings.PRINT_URL + '/file/' + pin, files=files)
         if rfile.status_code == 200:
             reply_markup = InlineKeyboardMarkup(
-                [[InlineKeyboardButton(f'Настройки печати', callback_data=f'print_settings_{pin}')]])
+                [[InlineKeyboardButton(ans['kb_print'], callback_data=f'print_settings_{pin}')]])
             await update.message.reply_text(
                 text=ans['send_to_print'].format(update.message.document.file_name, pin, pin),
                 reply_markup=reply_markup,
