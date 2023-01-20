@@ -85,15 +85,3 @@ def print_exc_format(**print_info):
             'path_from': 'https://t.me/',
         }
     )
-
-# @pass_if_exc
-# def print_exc_other(**print_info):
-#     requests.post(
-#         urljoin(settings.MARKETING_URL, "v1/action"),
-#         json={
-#             'user_id': -2,
-#             'action': 'print bot sent exc other',
-#             'additional_data': json.dumps(print_info),
-#             'path_from': 'https://t.me/',
-#         }
-#     )

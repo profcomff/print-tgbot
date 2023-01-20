@@ -14,13 +14,12 @@ from telegram.ext import ContextTypes, CallbackContext
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import marketing
+from src import marketing
 from src.answers import ans
 from src.db import TgUser
 from src.settings import get_settings
 
 settings = get_settings()
-
 engine = create_engine(url=settings.DB_DSN, pool_pre_ping=True)
 Session = sessionmaker(bind=engine, autocommit=True)
 session = Session()
@@ -31,57 +30,43 @@ def handler(func):
         try:
             await func(update, context)
         except (TelegramError, Exception) as err:
-            await context.bot.send_message(
-                chat_id=update.effective_user.id, text=ans['im_broken'],
-                parse_mode=ParseMode('HTML'))
+            await context.bot.send_message(chat_id=update.effective_user.id, text=ans['im_broken'])
             logging.error(f'Exception {str(err.args)}, traceback:')
             traceback.print_tb(err.__traceback__)
-            time.sleep(10)
+            time.sleep(2)
 
     return wrapper
 
 
 @handler
 async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[InlineKeyboardButton(ans['about'], callback_data='to_about')]]
-    text = ans['hello']
-    if __auth(update) is None:
-        text += ans['val_addition']
-        keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='to_auth')])
+    keyboard_base = [[InlineKeyboardButton(ans['about'], callback_data='to_about')]]
+    text, reply_markup = __change_message_by_auth(update, ans['hello'], keyboard_base)
     await update.message.reply_text(text=text,
-                                    reply_markup=InlineKeyboardMarkup(keyboard),
+                                    reply_markup=reply_markup,
                                     disable_web_page_preview=True)
 
 
 @handler
 async def handler_button(update: Update, context: CallbackContext) -> None:
     if update.callback_query.data == 'to_hello':
-        text = ans['hello']
-        keyboard = [[InlineKeyboardButton(ans['about'], callback_data='to_about')]]
-        if __auth(update) is None:
-            keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='to_auth')])
-            text += ans['val_addition']
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        keyboard_base = [[InlineKeyboardButton(ans['about'], callback_data='to_about')]]
+        text, reply_markup = __change_message_by_auth(update, ans['hello'], keyboard_base)
 
     elif update.callback_query.data == 'to_about':
-        text = ans['help']
-        keyboard = [[InlineKeyboardButton(ans['back'], callback_data='to_hello')]]
-        if __auth(update) is None:
-            keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='to_auth')])
-            text += ans['val_addition']
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        keyboard_base = [[InlineKeyboardButton(ans['back'], callback_data='to_hello')]]
+        text, reply_markup = __change_message_by_auth(update, ans['help'], keyboard_base)
 
     elif update.callback_query.data == 'to_auth':
-        text = ans['val_need']
-        reply_markup = None
+        text, reply_markup = ans['val_need'], None
+
     elif update.callback_query.data.startswith('print_'):
         await __print_settings_solver(update)
         return
-    else:
-        text = ans['unknown_keyboard_payload']
-        reply_markup = None
 
-    await update.callback_query.answer()
+    else:
+        text, reply_markup = ans['unknown_keyboard_payload'], None
+
     await update.callback_query.edit_message_text(text=text,
                                                   reply_markup=reply_markup,
                                                   disable_web_page_preview=True,
@@ -99,14 +84,7 @@ async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if requisites is None:
         await update.message.reply_text(ans['val_need'])
     else:
-        tg_id, surname, number = requisites
-        await update.message.reply_text(ans['val_info'].format(tg_id, surname, number),
-                                        parse_mode=ParseMode('HTML'))
-
-
-@handler
-async def handler_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(ans['history_not_implement'])
+        await update.message.reply_text(ans['val_info'].format(*requisites), parse_mode=ParseMode('HTML'))
 
 
 @handler
@@ -255,3 +233,10 @@ def __auth(update):
                          params=dict(surname=tguser.surname, number=tguser.number, v=1))
         if r.json():
             return tguser.tg_id, tguser.surname, tguser.number
+
+
+def __change_message_by_auth(update, text, keyboard):
+    if __auth(update) is None:
+        text += ans['val_addition']
+        keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='to_auth')])
+    return text, InlineKeyboardMarkup(keyboard)
