@@ -8,7 +8,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Cal
 
 from src.settings import get_settings
 from src.handlers import handler_start, handler_unknown_command, handler_print, handler_mismatch_doctype, \
-    handler_register, handler_button, handler_help, handler_auth, handler_history
+    handler_register, handler_button, handler_help, handler_auth
 
 
 logging.basicConfig(
@@ -23,7 +23,6 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler('start', handler_start))
     application.add_handler(CommandHandler('help', handler_help))
     application.add_handler(CommandHandler('auth', handler_auth))
-    application.add_handler(CommandHandler('history', handler_history))
     application.add_handler(CallbackQueryHandler(handler_button))
     application.add_handler(MessageHandler(filters.COMMAND, handler_unknown_command))
     application.add_handler(MessageHandler(filters.Document.MimeType('application/pdf'), handler_print))
