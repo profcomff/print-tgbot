@@ -23,8 +23,7 @@ from src.settings import get_settings
 settings = get_settings()
 
 
-
-engine = create_engine(url=settings.DB_DSN)
+engine = create_engine(url=settings.DB_DSN, pool_pre_ping=True)
 Session = sessionmaker(bind=engine, autocommit=True)
 session = Session()
 
@@ -46,6 +45,9 @@ def handler(func):
         #         logging.error('Reconnect database failed')
         #         time.sleep(10)
 
+        # except telegram.error.NetworkError #TODO: Telegram errors
+        # except psycopg2.OperationalError
+
         except Exception as err:
             await context.bot.send_message(
                 chat_id=update.effective_user.id, text=ans['im_broken'],
@@ -56,12 +58,6 @@ def handler(func):
             time.sleep(5)
 
     return wrapper
-
-
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logging.error(msg="Exception while handling an update:", exc_info=context.error)
-    await context.bot.send_message(
-        chat_id=update.effective_user.id, text=ans['im_broken'], parse_mode=ParseMode('HTML'))
 
 
 @handler
@@ -79,7 +75,6 @@ async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @handler
 async def handler_button(update: Update, context: CallbackContext) -> None:
     if update.callback_query.data == 'want_instruction':
-        logging.info('button want_instruction pressed')
         text = ans['help']
         keyboard = [[InlineKeyboardButton(ans['conf'], callback_data='want_confident')]]
         if __auth(update) is None:
@@ -88,7 +83,6 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
         reply_markup = InlineKeyboardMarkup(keyboard)
 
     elif update.callback_query.data == 'want_confident':
-        logging.info('button want_instruction pressed')
         text = ans['conf_full']
         keyboard = [[InlineKeyboardButton(ans['back'], callback_data='want_instruction')]]
         if __auth(update) is None:
@@ -107,7 +101,6 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
         reply_markup = None
 
     await update.callback_query.answer()
-    logging.info('im here')
     await update.callback_query.edit_message_text(text=text,
                                                   reply_markup=reply_markup,
                                                   disable_web_page_preview=True,
@@ -203,8 +196,8 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode=ParseMode('HTML'))
             return
 
-    await update.callback_query.edit_message_text(text=ans['print_err'],
-                                                  parse_mode=ParseMode('HTML'))
+    await context.bot.send_message(chat_id=update.effective_user.id,
+                                   text=ans['print_err'], parse_mode=ParseMode('HTML'))
 
 
 @handler
