@@ -10,6 +10,7 @@ import traceback
 # import psycopg2
 
 from telegram.constants import ParseMode
+from telegram.error import TelegramError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackContext
 from sqlalchemy import create_engine
@@ -32,30 +33,14 @@ def handler(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await func(update, context)
-        # except psycopg2.Error as err:
-        #     logging.error('Database Error (wrapper), description:')
-        #     traceback.print_tb(err.__traceback__)
-        #     logging.error(err.args)
-        #     try:
-        #         logging.warning('Try to reconnect database...')
-        #         db.reconnect()
-        #         logging.warning('Database connected successful')
-        #         time.sleep(1)
-        #     except psycopg2.Error:
-        #         logging.error('Reconnect database failed')
-        #         time.sleep(10)
 
-        # except telegram.error.NetworkError #TODO: Telegram errors
-        # except psycopg2.OperationalError
-
-        except Exception as err:
+        except (TelegramError, Exception) as err:
             await context.bot.send_message(
                 chat_id=update.effective_user.id, text=ans['im_broken'],
                 parse_mode=ParseMode('HTML'))
-            logging.error('Exception (wrapper), description:')
+            logging.error(f'Exception {str(err.args)}, traceback:')
             traceback.print_tb(err.__traceback__)
-            logging.error(str(err.args))
-            time.sleep(5)
+            time.sleep(1)
 
     return wrapper
 
@@ -173,8 +158,13 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=update.message.chat.id,
                                        text=ans['val_need'])
         return
-
-    pdf_path, filename = await __get_attachments(update, context)
+    try:
+        pdf_path, filename = await __get_attachments(update, context)
+    except FileSizeError:
+        await update.message.reply_text(text=ans['file_size_error'].format(update.message.document.file_name),
+                                        reply_to_message_id=update.message.id,
+                                        parse_mode=ParseMode('HTML'))
+        return
     if not os.path.exists(pdf_path):
         await update.message.reply_text(text=ans['download_error'], reply_to_message_id=update.message.id)
         return
@@ -202,7 +192,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @handler
 async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text  # TODO: ("'NoneType' object has no attribute 'text'",)
+    text = update.message.text  # TODO: Is error still exist? ("'NoneType' object has no attribute 'text'",)
     chat_id = update.message.chat.id
     if text is None:
         if session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none() is None:
@@ -247,10 +237,16 @@ async def __get_attachments(update, context):
         os.makedirs(os.path.join(settings.PDF_PATH, str(update.message.chat.id)))
     path_to_save = os.path.join(settings.PDF_PATH, str(update.message.chat.id), update.message.document.file_name)
     # path_to_save = os.path.join(settings.PDF_PATH, update.message.document.file_unique_id + '.pdf')
-    # update.message.document.file_size # TODO: Check size
+    file_size = update.message.document.file_size # TODO: Check size
+    if file_size / 1024**2 > settings.MAX_PDF_SIZE_MB:
+        raise FileSizeError
     file = await context.bot.get_file(update.message.document.file_id)
     await file.download_to_drive(custom_path=path_to_save)
     return path_to_save, update.message.document.file_name  # , update.message.document.file_unique_id
+
+
+class FileSizeError(Exception):
+    pass
 
 
 def __auth(update):
