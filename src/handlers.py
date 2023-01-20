@@ -7,8 +7,7 @@ import logging
 import requests
 import traceback
 
-# import psycopg2
-
+import psycopg2
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -33,7 +32,6 @@ def handler(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await func(update, context)
-
         except (TelegramError, Exception) as err:
             await context.bot.send_message(
                 chat_id=update.effective_user.id, text=ans['im_broken'],
@@ -48,7 +46,7 @@ def handler(func):
 @handler
 async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton(ans['conf'], callback_data='want_confident')]]
-    text = ans['help']
+    text = ans['hello']
     if __auth(update) is None:
         text += ans['val_addition']
         keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='auth')])
@@ -60,7 +58,7 @@ async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @handler
 async def handler_button(update: Update, context: CallbackContext) -> None:
     if update.callback_query.data == 'want_instruction':
-        text = ans['help']
+        text = ans['hello']
         keyboard = [[InlineKeyboardButton(ans['conf'], callback_data='want_confident')]]
         if __auth(update) is None:
             keyboard.append([InlineKeyboardButton(ans['auth'], callback_data='auth')])
@@ -94,7 +92,7 @@ async def handler_button(update: Update, context: CallbackContext) -> None:
 
 @handler
 async def handler_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(ans['help'])
+    await update.message.reply_text(ans['help'], disable_web_page_preview=True, parse_mode=ParseMode('HTML'))
 
 
 @handler
@@ -155,8 +153,8 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if requisites is None:
         await context.bot.send_message(chat_id=update.message.chat.id,
                                        text=ans['doc_not_accepted'])
-        await context.bot.send_message(chat_id=update.message.chat.id,
-                                       text=ans['val_need'])
+        # await context.bot.send_message(chat_id=update.message.chat.id,
+        #                                text=ans['val_need'])
         return
     try:
         pdf_path, filename = await __get_attachments(update, context)
@@ -192,7 +190,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @handler
 async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text  # TODO: Is error still exist? ("'NoneType' object has no attribute 'text'",)
+    text = update.message.text
     chat_id = update.message.chat.id
     if text is None:
         if session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none() is None:
@@ -210,13 +208,9 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if r.json() and data is None:
             session.add(TgUser(tg_id=chat_id, surname=surname, number=number))
             session.flush()
-            # TgUser
-            # db.add_user(chat_id, surname, number)
             await context.bot.send_message(chat_id=chat_id, text=ans['val_pass'])
             return True
         elif r.json() and data is not None:
-            # db.update_user(chat_id, surname, number)
-            # tguser = session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none()
             data.surname = surname
             data.number = number
             await context.bot.send_message(chat_id=chat_id, text=ans['val_update_pass'])
@@ -236,13 +230,11 @@ async def __get_attachments(update, context):
     if not os.path.exists(os.path.join(settings.PDF_PATH, str(update.message.chat.id))):
         os.makedirs(os.path.join(settings.PDF_PATH, str(update.message.chat.id)))
     path_to_save = os.path.join(settings.PDF_PATH, str(update.message.chat.id), update.message.document.file_name)
-    # path_to_save = os.path.join(settings.PDF_PATH, update.message.document.file_unique_id + '.pdf')
-    file_size = update.message.document.file_size # TODO: Check size
-    if file_size / 1024**2 > settings.MAX_PDF_SIZE_MB:
+    if update.message.document.file_size / 1024**2 > settings.MAX_PDF_SIZE_MB:
         raise FileSizeError
     file = await context.bot.get_file(update.message.document.file_id)
     await file.download_to_drive(custom_path=path_to_save)
-    return path_to_save, update.message.document.file_name  # , update.message.document.file_unique_id
+    return path_to_save, update.message.document.file_name
 
 
 class FileSizeError(Exception):
