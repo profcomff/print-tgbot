@@ -27,7 +27,7 @@ def register(**user_info):
             'user_id': -2,
             'action': 'print bot register',
             'additional_data': json.dumps(user_info),
-            'path_from': 'https://vk.com/im',
+            'path_from': 'https://t.me/',
         }
     )
 
@@ -40,7 +40,7 @@ def re_register(**user_info):
             'user_id': -2,
             'action': 'print bot repeat register',
             'additional_data': json.dumps(user_info),
-            'path_from': 'https://vk.com/im',
+            'path_from': 'https://t.me/',
         }
     )
 
@@ -53,7 +53,7 @@ def register_exc_wrong(**user_info):
             'user_id': -2,
             'action': 'print bot register exc wrong creds',
             'additional_data': json.dumps(user_info),
-            'path_from': 'https://vk.com/im',
+            'path_from': 'https://t.me/',
         }
     )
 
@@ -66,7 +66,7 @@ def print_success(**print_info):
             'user_id': -2,
             'action': 'print bot sent',
             'additional_data': json.dumps(print_info),
-            'path_from': 'https://vk.com/im',
+            'path_from': 'https://t.me/',
             'path_to': urljoin(settings.PRINT_URL, f'/file/{print_info.get("pin")}'),
         }
     )
@@ -80,7 +80,7 @@ def print_exc_format(**print_info):
             'user_id': -2,
             'action': 'print bot sent exc format',
             'additional_data': json.dumps(print_info),
-            'path_from': 'https://vk.com/im',
+            'path_from': 'https://t.me/',
         }
     )
 
@@ -93,6 +93,6 @@ def print_exc_format(**print_info):
 #             'user_id': -2,
 #             'action': 'print bot sent exc other',
 #             'additional_data': json.dumps(print_info),
-#             'path_from': 'https://vk.com/im',
+#             'path_from': 'https://t.me/',
 #         }
 #     )
