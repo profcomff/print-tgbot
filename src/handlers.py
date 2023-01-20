@@ -14,6 +14,7 @@ from telegram.ext import ContextTypes, CallbackContext
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+import marketing
 from src.answers import ans
 from src.db import TgUser
 from src.settings import get_settings
@@ -116,6 +117,7 @@ async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_
 @handler
 async def handler_mismatch_doctype(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans['only_pdf'])
+    marketing.print_exc_format(tg_id=update.message.chat_id)
 
 
 async def __print_settings_solver(update):
@@ -182,6 +184,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_to_message_id=update.message.id,
                 disable_web_page_preview=True,
                 parse_mode=ParseMode('HTML'))
+            marketing.print_success(tg_id=update.message.chat.id, surname=requisites[1], number=requisites[2])
             return
 
     await context.bot.send_message(chat_id=update.effective_user.id,
@@ -209,14 +212,17 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.add(TgUser(tg_id=chat_id, surname=surname, number=number))
             session.flush()
             await context.bot.send_message(chat_id=chat_id, text=ans['val_pass'])
+            marketing.register(tg_id=chat_id, surname=surname, number=number)
             return True
         elif r.json() and data is not None:
             data.surname = surname
             data.number = number
             await context.bot.send_message(chat_id=chat_id, text=ans['val_update_pass'])
+            marketing.re_register(tg_id=chat_id, surname=surname, number=number)
             return True
         elif r.json() is False:
             await context.bot.send_message(chat_id=chat_id, text=ans['val_fail'])
+            marketing.register_exc_wrong(tg_id=chat_id, surname=surname, number=number)
     else:
         if session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none() is None:
             await context.bot.send_message(chat_id=chat_id, text=ans['val_need'])
