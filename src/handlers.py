@@ -142,7 +142,7 @@ async def __print_settings_solver(update):
 
     keyboard = [
         [InlineKeyboardButton(f'{ans["kb_print_copies"]} {options["copies"]}', callback_data=f'print_copies_{pin}')],
-        [InlineKeyboardButton(ans['kb_print_twoside'] if options['two_sided'] else ans['kb_print_side'],
+        [InlineKeyboardButton(ans['kb_print_two_side'] if options['two_sided'] else ans['kb_print_side'],
                               callback_data=f'print_twosided_{pin}')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 

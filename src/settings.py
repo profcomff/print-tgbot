@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     """Application settings"""
     BOT_TOKEN: str
     DB_DSN: PostgresDsn
-    MARKETING_URL: str
+    MARKETING_URL: AnyUrl
     PRINT_URL: AnyUrl
     PDF_PATH: str = 'userdata'
     MAX_PDF_SIZE_MB: float

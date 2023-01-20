@@ -1,11 +1,12 @@
 import json
-import requests
 import logging
 import traceback
 from urllib.parse import urljoin
 
+import requests
 
 from src.settings import get_settings
+
 settings = get_settings()
 
 
@@ -16,6 +17,7 @@ def pass_if_exc(func):
         except Exception as err:
             logging.error(f'Marketing Exception {str(err.args)}, traceback:')
             traceback.print_tb(err.__traceback__)
+
     return wrapper
 
 
@@ -83,7 +85,6 @@ def print_exc_format(**print_info):
             'path_from': 'https://t.me/',
         }
     )
-
 
 # @pass_if_exc
 # def print_exc_other(**print_info):
