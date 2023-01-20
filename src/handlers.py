@@ -7,7 +7,6 @@ import logging
 import requests
 import traceback
 
-
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -15,13 +14,11 @@ from telegram.ext import ContextTypes, CallbackContext
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-
 from src.answers import ans
 from src.db import TgUser
 from src.settings import get_settings
 
 settings = get_settings()
-
 
 engine = create_engine(url=settings.DB_DSN, pool_pre_ping=True)
 Session = sessionmaker(bind=engine, autocommit=True)
@@ -38,7 +35,7 @@ def handler(func):
                 parse_mode=ParseMode('HTML'))
             logging.error(f'Exception {str(err.args)}, traceback:')
             traceback.print_tb(err.__traceback__)
-            time.sleep(1)
+            time.sleep(10)
 
     return wrapper
 
@@ -141,10 +138,15 @@ async def __print_settings_solver(update):
         await update.callback_query.message.reply_text(ans['settings_change_fail'])
         return
 
-    keyboard = [[InlineKeyboardButton(f'{ans["kb_print_copies"]} {options["copies"]}', callback_data=f'print_copies_{pin}')],
-                [InlineKeyboardButton(ans['kb_print_twoside'] if options['two_sided'] else ans['kb_print_side'],
-                                      callback_data=f'print_twosided_{pin}')]]
+    keyboard = [
+        [InlineKeyboardButton(f'{ans["kb_print_copies"]} {options["copies"]}', callback_data=f'print_copies_{pin}')],
+        [InlineKeyboardButton(ans['kb_print_twoside'] if options['two_sided'] else ans['kb_print_side'],
+                              callback_data=f'print_twosided_{pin}')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
+
+    if ans['settings_warning'] not in update.callback_query.message.text_html:
+        text = update.callback_query.message.text_html + ans['settings_warning']
+        await update.callback_query.edit_message_text(text=text, parse_mode=ParseMode('HTML'))
     await update.callback_query.edit_message_reply_markup(reply_markup=reply_markup)
 
 
@@ -228,7 +230,7 @@ async def __get_attachments(update, context):
     if not os.path.exists(os.path.join(settings.PDF_PATH, str(update.message.chat.id))):
         os.makedirs(os.path.join(settings.PDF_PATH, str(update.message.chat.id)))
     path_to_save = os.path.join(settings.PDF_PATH, str(update.message.chat.id), update.message.document.file_name)
-    if update.message.document.file_size / 1024**2 > settings.MAX_PDF_SIZE_MB:
+    if update.message.document.file_size / 1024 ** 2 > settings.MAX_PDF_SIZE_MB:
         raise FileSizeError
     file = await context.bot.get_file(update.message.document.file_id)
     await file.download_to_drive(custom_path=path_to_save)
