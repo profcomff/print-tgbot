@@ -72,7 +72,8 @@ async def handler_button_browser(update: Update, context: CallbackContext) -> No
         text, reply_markup = __change_message_by_auth(update, ans['help'], keyboard_base)
 
     elif update.callback_query.data == 'to_auth':
-        text, reply_markup = ans['val_need'], None
+        keyboard_base = [[InlineKeyboardButton(ans['back'], callback_data='to_hello')]]
+        text, reply_markup = ans['val_need'], InlineKeyboardMarkup(keyboard_base)
 
     elif update.callback_query.data.startswith('print_'):
         await __print_settings_solver(update)
