@@ -5,6 +5,7 @@ import logging
 import os
 import time
 import traceback
+from io import BufferedRWPair, BufferedIOBase, BytesIO, FileIO
 
 import requests
 from sqlalchemy import create_engine
@@ -95,13 +96,14 @@ async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_
 
 @handler
 async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    t = time.time()
     requisites = __auth(update)
     if requisites is None:
         await context.bot.send_message(chat_id=update.message.chat.id,
                                        text=ans['doc_not_accepted'])
         return
     try:
-        pdf_path, filename = await __get_attachments(update, context)
+        fff, filename = await __get_attachments(update, context)
     except FileSizeError:
         await update.message.reply_text(text=ans['file_size_error'].format(update.message.document.file_name),
                                         reply_to_message_id=update.message.id,
@@ -115,7 +117,8 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                       json={'surname': requisites[1], 'number': requisites[2], 'filename': filename})
     if r.status_code == 200:
         pin = r.json()['pin']
-        files = {'file': (filename, open(pdf_path, 'rb'), 'application/pdf', {'Expires': '0'})}
+        files = {'file': (filename, fff.getvalue(), 'application/pdf', {'Expires': '0'})}
+        # rfile = requests.post(settings.PRINT_URL + '/file/' + pin, files=files)
         rfile = requests.post(settings.PRINT_URL + '/file/' + pin, files=files)
         if rfile.status_code == 200:
             reply_markup = InlineKeyboardMarkup(
@@ -127,6 +130,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 disable_web_page_preview=True,
                 parse_mode=ParseMode('HTML'))
             marketing.print_success(tg_id=update.message.chat.id, surname=requisites[1], number=requisites[2])
+            print('Print time', time.time() - t)
             return
 
     await context.bot.send_message(chat_id=update.effective_user.id,
@@ -205,7 +209,6 @@ async def __print_settings_solver(update: Update, context: CallbackContext):
         [InlineKeyboardButton(ans['kb_print_two_side'] if options['two_sided'] else ans['kb_print_side'],
                               callback_data=f'print_twosided_{pin}')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-
     await update.callback_query.edit_message_reply_markup(reply_markup=reply_markup)
 
 
@@ -239,7 +242,13 @@ async def __get_attachments(update, context):
     if update.message.document.file_size / 1024 ** 2 > settings.MAX_PDF_SIZE_MB:
         raise FileSizeError
     file = await context.bot.get_file(update.message.document.file_id)
-    await file.download_to_drive(custom_path=path_to_save)
-    if not os.path.exists(path_to_save):
-        raise FileNotFoundError
-    return path_to_save, update.message.document.file_name
+    fff = BytesIO()
+    await file.download_to_memory(fff)
+    with open("output.pdf", "wb") as f:
+        f.write(fff.getbuffer())
+    # return fff
+    # await file.download_to_drive(custom_path=path_to_save)
+    # if not os.path.exists(path_to_save):
+    #     raise FileNotFoundError
+    return fff, update.message.document.file_name
+    # return path_to_save, update.message.document.file_name
