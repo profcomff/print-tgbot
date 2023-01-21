@@ -2,10 +2,9 @@
 # 2023
 
 import logging
-import os
 import time
 import traceback
-from io import BufferedRWPair, BufferedIOBase, BytesIO, FileIO
+from io import BytesIO
 
 import requests
 from sqlalchemy import create_engine
@@ -96,20 +95,19 @@ async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_
 
 @handler
 async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    t = time.time()
     requisites = __auth(update)
     if requisites is None:
         await context.bot.send_message(chat_id=update.message.chat.id,
                                        text=ans['doc_not_accepted'])
         return
     try:
-        fff, filename = await __get_attachments(update, context)
+        filebytes, filename = await __get_attachments(update, context)
     except FileSizeError:
         await update.message.reply_text(text=ans['file_size_error'].format(update.message.document.file_name),
                                         reply_to_message_id=update.message.id,
                                         parse_mode=ParseMode('HTML'))
         return
-    except FileNotFoundError:
+    except TelegramError:
         await update.message.reply_text(text=ans['download_error'], reply_to_message_id=update.message.id)
         return
 
@@ -117,8 +115,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                       json={'surname': requisites[1], 'number': requisites[2], 'filename': filename})
     if r.status_code == 200:
         pin = r.json()['pin']
-        files = {'file': (filename, fff.getvalue(), 'application/pdf', {'Expires': '0'})}
-        # rfile = requests.post(settings.PRINT_URL + '/file/' + pin, files=files)
+        files = {'file': (filename, filebytes.getvalue(), 'application/pdf', {'Expires': '0'})}
         rfile = requests.post(settings.PRINT_URL + '/file/' + pin, files=files)
         if rfile.status_code == 200:
             reply_markup = InlineKeyboardMarkup(
@@ -130,7 +127,6 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 disable_web_page_preview=True,
                 parse_mode=ParseMode('HTML'))
             marketing.print_success(tg_id=update.message.chat.id, surname=requisites[1], number=requisites[2])
-            print('Print time', time.time() - t)
             return
 
     await context.bot.send_message(chat_id=update.effective_user.id,
@@ -234,21 +230,9 @@ class FileSizeError(Exception):
 
 
 async def __get_attachments(update, context):
-    if not os.path.exists(settings.PDF_PATH):
-        os.makedirs(settings.PDF_PATH)
-    if not os.path.exists(os.path.join(settings.PDF_PATH, str(update.message.chat.id))):
-        os.makedirs(os.path.join(settings.PDF_PATH, str(update.message.chat.id)))
-    path_to_save = os.path.join(settings.PDF_PATH, str(update.message.chat.id), update.message.document.file_name)
     if update.message.document.file_size / 1024 ** 2 > settings.MAX_PDF_SIZE_MB:
         raise FileSizeError
-    file = await context.bot.get_file(update.message.document.file_id)
-    fff = BytesIO()
-    await file.download_to_memory(fff)
-    with open("output.pdf", "wb") as f:
-        f.write(fff.getbuffer())
-    # return fff
-    # await file.download_to_drive(custom_path=path_to_save)
-    # if not os.path.exists(path_to_save):
-    #     raise FileNotFoundError
-    return fff, update.message.document.file_name
-    # return path_to_save, update.message.document.file_name
+    file_info = await context.bot.get_file(update.message.document.file_id)
+    filebytes = BytesIO()
+    await file_info.download_to_memory(filebytes)
+    return filebytes, update.message.document.file_name
