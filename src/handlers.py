@@ -9,7 +9,7 @@ from io import BytesIO
 import requests
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
 from telegram.ext import ContextTypes, CallbackContext
@@ -119,9 +119,10 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         rfile = requests.post(settings.PRINT_URL + '/file/' + pin, files=files)
         if rfile.status_code == 200:
             reply_markup = InlineKeyboardMarkup(
-                [[InlineKeyboardButton(ans['kb_print'], callback_data=f'print_settings_{pin}')]])
+                [[InlineKeyboardButton(text=ans['qr'], web_app=WebAppInfo(ans['qr_print'].format(pin)))],
+                 [InlineKeyboardButton(ans['kb_print'], callback_data=f'print_settings_{pin}')]])
             await update.message.reply_text(
-                text=ans['send_to_print'].format(update.message.document.file_name, pin, pin),
+                text=ans['send_to_print'].format(update.message.document.file_name, pin),
                 reply_markup=reply_markup,
                 reply_to_message_id=update.message.id,
                 disable_web_page_preview=True,
@@ -201,6 +202,7 @@ async def __print_settings_solver(update: Update, context: CallbackContext):
         return
 
     keyboard = [
+        [InlineKeyboardButton(text=ans['qr'], web_app=WebAppInfo(ans['qr_print'].format(pin)))],
         [InlineKeyboardButton(f'{ans["kb_print_copies"]} {options["copies"]}', callback_data=f'print_copies_{pin}')],
         [InlineKeyboardButton(ans['kb_print_two_side'] if options['two_sided'] else ans['kb_print_side'],
                               callback_data=f'print_twosided_{pin}')]]
