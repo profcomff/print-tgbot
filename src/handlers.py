@@ -76,7 +76,7 @@ async def handler_button_browser(update: Update, context: CallbackContext) -> No
         text, reply_markup = ans['val_need'], InlineKeyboardMarkup(keyboard_base)
 
     elif update.callback_query.data.startswith('print_'):
-        await __print_settings_solver(update)
+        await __print_settings_solver(update, context)
         return
 
     else:
@@ -178,7 +178,7 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=chat_id, text=ans['val_update_fail'])
 
 
-async def __print_settings_solver(update):
+async def __print_settings_solver(update: Update, context: CallbackContext):
     _, button, pin = update.callback_query.data.split('_')
 
     r = requests.get(settings.PRINT_URL + f'''/file/{pin}''')
@@ -190,8 +190,10 @@ async def __print_settings_solver(update):
 
     if button == 'copies':
         options['copies'] = options['copies'] % 5 + 1
-    if button == 'twosided':
+    elif button == 'twosided':
         options['two_sided'] = not options['two_sided']
+    else:
+        await context.bot.answer_callback_query(update.callback_query.id, ans['settings_warning'])
 
     r = requests.patch(settings.PRINT_URL + f'''/file/{pin}''', json={'options': options})
     if r.status_code != 200:
@@ -204,9 +206,6 @@ async def __print_settings_solver(update):
                               callback_data=f'print_twosided_{pin}')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    if ans['settings_warning'] not in update.callback_query.message.text_html:
-        text = update.callback_query.message.text_html + ans['settings_warning']
-        await update.callback_query.edit_message_text(text=text, parse_mode=ParseMode('HTML'))
     await update.callback_query.edit_message_reply_markup(reply_markup=reply_markup)
 
 
