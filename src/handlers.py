@@ -30,10 +30,10 @@ def handler(func):
         try:
             await func(update, context)
         except (TelegramError, Exception) as err:
-            await context.bot.send_message(chat_id=update.effective_user.id, text=ans['im_broken'])
             logging.error(f'Exception {str(err.args)}, traceback:')
             traceback.print_tb(err.__traceback__)
             time.sleep(2)
+            await context.bot.send_message(chat_id=update.effective_user.id, text=ans['im_broken'])
 
     return wrapper
 
