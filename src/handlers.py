@@ -119,7 +119,8 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         rfile = requests.post(settings.PRINT_URL + '/file/' + pin, files=files)
         if rfile.status_code == 200:
             reply_markup = InlineKeyboardMarkup(
-                [[InlineKeyboardButton(text=ans['qr'], web_app=WebAppInfo(ans['qr_print'].format(pin)))],
+                [[InlineKeyboardButton(text=ans['qr'],
+                                       web_app=WebAppInfo(ans['qr_print'].format(settings.PRINT_URL_QR, pin)))],
                  [InlineKeyboardButton(ans['kb_print'], callback_data=f'print_settings_{pin}')]])
             await update.message.reply_text(
                 text=ans['send_to_print'].format(update.message.document.file_name, pin),
@@ -202,7 +203,7 @@ async def __print_settings_solver(update: Update, context: CallbackContext):
         return
 
     keyboard = [
-        [InlineKeyboardButton(text=ans['qr'], web_app=WebAppInfo(ans['qr_print'].format(pin)))],
+        [InlineKeyboardButton(text=ans['qr'], web_app=WebAppInfo(ans['qr_print'].format(settings.PRINT_URL_QR, pin)))],
         [InlineKeyboardButton(f'{ans["kb_print_copies"]} {options["copies"]}', callback_data=f'print_copies_{pin}')],
         [InlineKeyboardButton(ans['kb_print_two_side'] if options['two_sided'] else ans['kb_print_side'],
                               callback_data=f'print_twosided_{pin}')]]

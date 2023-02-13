@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     DB_DSN: PostgresDsn
     MARKETING_URL: AnyUrl
     PRINT_URL: AnyUrl
+    PRINT_URL_QR: AnyUrl
     MAX_PDF_SIZE_MB: float
 
     class Config:

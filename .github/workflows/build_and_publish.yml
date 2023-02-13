@@ -66,6 +66,7 @@ jobs:
             --env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
             --env MARKETING_URL=${{ vars.MARKETING_URL }} \
             --env PRINT_URL=${{ vars.PRINT_URL }} \
+            --env PRINT_URL_QR=${{ vars.PRINT_URL_QR }} \
             --env MAX_PDF_SIZE_MB=${{ vars.MAX_PDF_SIZE_MB }} \
             --name ${{ env.CONTAINER_NAME }}_migration \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test \
@@ -80,6 +81,7 @@ jobs:
             --env BOT_TOKEN='${{ secrets.BOT_TOKEN }}' \
             --env MARKETING_URL='${{ vars.MARKETING_URL }}' \
             --env PRINT_URL='${{ vars.PRINT_URL }}' \
+            --env PRINT_URL_QR=${{ vars.PRINT_URL_QR }} \
             --env MAX_PDF_SIZE_MB=${{ vars.MAX_PDF_SIZE_MB }} \
             --name ${{ env.CONTAINER_NAME }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
@@ -106,6 +108,7 @@ jobs:
             --env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
             --env MARKETING_URL=${{ vars.MARKETING_URL }} \
             --env PRINT_URL=${{ vars.PRINT_URL }} \
+            --env PRINT_URL_QR=${{ vars.PRINT_URL_QR }} \
             --env MAX_PDF_SIZE_MB=${{ vars.MAX_PDF_SIZE_MB }} \
             --name ${{ env.CONTAINER_NAME }}_migration \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
@@ -120,6 +123,7 @@ jobs:
             --env BOT_TOKEN='${{ secrets.BOT_TOKEN }}' \
             --env MARKETING_URL='${{ vars.MARKETING_URL }}' \
             --env PRINT_URL='${{ vars.PRINT_URL }}' \
+            --env PRINT_URL_QR=${{ vars.PRINT_URL_QR }} \
             --env MAX_PDF_SIZE_MB=${{ vars.MAX_PDF_SIZE_MB }} \
             --name ${{ env.CONTAINER_NAME }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
