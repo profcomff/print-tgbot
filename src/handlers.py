@@ -160,7 +160,7 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
         data: TgUser | None = session.query(TgUser).filter(TgUser.tg_id == update.effective_user.id).one_or_none()
         if r.json() and data is None:
             session.add(TgUser(tg_id=chat_id, surname=surname, number=number))
-            session.flush()
+            session.commit()
             await context.bot.send_message(chat_id=chat_id, text=ans['val_pass'])
             marketing.register(tg_id=chat_id, surname=surname, number=number)
             return True
