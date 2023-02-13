@@ -1,6 +1,6 @@
-requests
-psycopg2-binary
 python-telegram-bot
-pydantic
 SQLAlchemy
 alembic
+requests
+pydantic
+psycopg2-binary
