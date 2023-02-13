@@ -21,7 +21,7 @@ from src.settings import get_settings
 
 settings = get_settings()
 engine = create_engine(url=settings.DB_DSN, pool_pre_ping=True)
-Session = sessionmaker(bind=engine, autocommit=True)
+Session = sessionmaker(bind=engine)
 session = Session()
 
 
@@ -157,7 +157,7 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
         number = text.split('\n')[1].strip()
 
         r = requests.get(settings.PRINT_URL + '/is_union_member', params=dict(surname=surname, v=1, number=number))
-        data: TgUser = session.query(TgUser).filter(TgUser.tg_id == update.effective_user.id).one_or_none()
+        data: TgUser | None = session.query(TgUser).filter(TgUser.tg_id == update.effective_user.id).one_or_none()
         if r.json() and data is None:
             session.add(TgUser(tg_id=chat_id, surname=surname, number=number))
             session.flush()
@@ -213,12 +213,12 @@ async def __print_settings_solver(update: Update, context: CallbackContext):
 
 def __auth(update):
     chat_id = update.effective_user.id
-    if session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none() is not None:
-        tguser: TgUser = session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none()
+    tg_user: TgUser | None = session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none()
+    if tg_user is not None:
         r = requests.get(settings.PRINT_URL + '/is_union_member',
-                         params=dict(surname=tguser.surname, number=tguser.number, v=1))
+                         params=dict(surname=tg_user.surname, number=tg_user.number, v=1))
         if r.json():
-            return tguser.tg_id, tguser.surname, tguser.number
+            return tg_user.tg_id, tg_user.surname, tg_user.number
 
 
 def __change_message_by_auth(update, text, keyboard):

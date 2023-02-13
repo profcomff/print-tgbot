@@ -2,5 +2,5 @@ requests
 psycopg2-binary
 python-telegram-bot
 pydantic
-SQLAlchemy==1.4
+SQLAlchemy
 alembic

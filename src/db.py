@@ -2,6 +2,7 @@ import re
 
 import sqlalchemy
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 @as_declarative()
@@ -24,6 +25,6 @@ class Base:
 
 
 class TgUser(Base):
-    tg_id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    surname = sqlalchemy.Column(sqlalchemy.String)
-    number = sqlalchemy.Column(sqlalchemy.String)
+    tg_id: Mapped[int] = mapped_column(sqlalchemy.Integer, primary_key=True)
+    surname: Mapped[int] = mapped_column(sqlalchemy.String, nullable=False)
+    number: Mapped[int] = mapped_column(sqlalchemy.String, nullable=False)
