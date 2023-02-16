@@ -8,7 +8,7 @@ from telegram.ext.filters import COMMAND, Document, ALL
 
 from src.settings import get_settings
 from src.handlers import handler_start, handler_help, handler_auth, handler_button_browser, handler_unknown_command, \
-    handler_print, handler_mismatch_doctype, handler_register
+    handler_print, handler_mismatch_doctype, handler_register, native_error_handler
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -27,4 +27,5 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(Document.MimeType('application/pdf'), handler_print))
     application.add_handler(MessageHandler(Document.ALL, handler_mismatch_doctype))
     application.add_handler(MessageHandler(ALL, handler_register))
+    application.add_error_handler(native_error_handler)
     application.run_polling()

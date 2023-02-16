@@ -2,7 +2,6 @@
 # 2023
 
 import logging
-import time
 import traceback
 from io import BytesIO
 
@@ -25,20 +24,21 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 
-def handler(func):
+async def native_error_handler(update, context):
+    pass
+
+
+def error_handler(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await func(update, context)
-        except (TelegramError, Exception) as err:
-            logging.error(f'Exception {str(err.args)}, traceback:')
+        except Exception as err:
+            logging.error(err)
             traceback.print_tb(err.__traceback__)
-            time.sleep(2)
-            await context.bot.send_message(chat_id=update.effective_user.id, text=ans['im_broken'])
-
     return wrapper
 
 
-@handler
+@error_handler
 async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard_base = [[InlineKeyboardButton(ans['about'], callback_data='to_about')]]
     text, reply_markup = __change_message_by_auth(update, ans['hello'], keyboard_base)
@@ -47,12 +47,12 @@ async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                     disable_web_page_preview=True)
 
 
-@handler
+@error_handler
 async def handler_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans['help'], disable_web_page_preview=True, parse_mode=ParseMode('HTML'))
 
 
-@handler
+@error_handler
 async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update)
     if requisites is None:
@@ -61,7 +61,7 @@ async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(ans['val_info'].format(*requisites), parse_mode=ParseMode('HTML'))
 
 
-@handler
+@error_handler
 async def handler_button_browser(update: Update, context: CallbackContext) -> None:
     if update.callback_query.data == 'to_hello':
         keyboard_base = [[InlineKeyboardButton(ans['about'], callback_data='to_about')]]
@@ -88,12 +88,12 @@ async def handler_button_browser(update: Update, context: CallbackContext) -> No
                                                   parse_mode=ParseMode('HTML'))
 
 
-@handler
+@error_handler
 async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans['unknown_command'])
 
 
-@handler
+@error_handler
 async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update)
     if requisites is None:
@@ -135,13 +135,13 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                    text=ans['print_err'], parse_mode=ParseMode('HTML'))
 
 
-@handler
+@error_handler
 async def handler_mismatch_doctype(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans['only_pdf'])
     marketing.print_exc_format(tg_id=update.message.chat_id)
 
 
-@handler
+@error_handler
 async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     chat_id = update.message.chat.id
