@@ -6,7 +6,7 @@ import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler
 from telegram.ext.filters import COMMAND, Document, ALL
 
-from src.settings import get_settings
+from src.settings import Settings
 from src.handlers import handler_start, handler_help, handler_auth, handler_button_browser, handler_unknown_command, \
     handler_print, handler_mismatch_doctype, handler_register, native_error_handler
 
@@ -17,7 +17,7 @@ logging.basicConfig(
 )
 
 if __name__ == '__main__':
-    settings = get_settings()
+    settings = Settings()
     application = ApplicationBuilder().token(settings.BOT_TOKEN).build()
     application.add_handler(CommandHandler('start', handler_start))
     application.add_handler(CommandHandler('help', handler_help))

@@ -5,9 +5,9 @@ from urllib.parse import urljoin
 
 import requests
 
-from src.settings import get_settings
+from src.settings import Settings
 
-settings = get_settings()
+settings = Settings()
 
 
 def pass_if_exc(func):

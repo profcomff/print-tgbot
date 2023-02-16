@@ -16,9 +16,9 @@ from telegram.ext import ContextTypes, CallbackContext
 from src import marketing
 from src.answers import ans
 from src.db import TgUser
-from src.settings import get_settings
+from src.settings import Settings
 
-settings = get_settings()
+settings = Settings()
 engine = create_engine(url=settings.DB_DSN, pool_pre_ping=True)
 Session = sessionmaker(bind=engine)
 session = Session()
