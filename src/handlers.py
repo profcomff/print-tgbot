@@ -130,7 +130,11 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode=ParseMode('HTML'))
             marketing.print_success(tg_id=update.message.chat.id, surname=requisites[1], number=requisites[2])
             return
-
+    elif r.status_code == 413:
+        await update.message.reply_text(text=ans['file_size_error'].format(update.message.document.file_name),
+                                        reply_to_message_id=update.message.id,
+                                        parse_mode=ParseMode('HTML'))
+        return
     await context.bot.send_message(chat_id=update.effective_user.id,
                                    text=ans['print_err'], parse_mode=ParseMode('HTML'))
 
