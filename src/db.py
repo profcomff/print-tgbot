@@ -25,6 +25,6 @@ class Base:
 
 
 class TgUser(Base):
-    tg_id: Mapped[int] = mapped_column(sqlalchemy.Integer, primary_key=True)
+    tg_id: Mapped[int] = mapped_column(sqlalchemy.BIGINT, primary_key=True)
     surname: Mapped[int] = mapped_column(sqlalchemy.String, nullable=False)
     number: Mapped[int] = mapped_column(sqlalchemy.String, nullable=False)
