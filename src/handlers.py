@@ -8,7 +8,7 @@ from io import BytesIO
 import requests
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import PendingRollbackError
+from sqlalchemy.exc import SQLAlchemyError, PendingRollbackError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
@@ -37,6 +37,11 @@ def error_handler(func):
             logging.warning(err)
             traceback.print_tb(err.__traceback__)
             session.rollback()
+        except SQLAlchemyError as err:
+            logging.error(err)
+            traceback.print_tb(err.__traceback__)
+            await context.bot.send_message(chat_id=update.message.chat.id,
+                                           text='Ошибка базы данных. Попробуйте позже.')
         except Exception as err:
             logging.error(err)
             traceback.print_tb(err.__traceback__)
