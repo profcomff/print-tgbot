@@ -8,6 +8,7 @@ from io import BytesIO
 import requests
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import PendingRollbackError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
@@ -32,6 +33,10 @@ def error_handler(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await func(update, context)
+        except PendingRollbackError as err:
+            logging.warning(err)
+            traceback.print_tb(err.__traceback__)
+            session.rollback()
         except Exception as err:
             logging.error(err)
             traceback.print_tb(err.__traceback__)
