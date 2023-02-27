@@ -40,8 +40,7 @@ def error_handler(func):
         except SQLAlchemyError as err:
             logging.error(err)
             traceback.print_tb(err.__traceback__)
-            await context.bot.send_message(chat_id=update.message.chat.id,
-                                           text='Ошибка базы данных. Попробуйте позже.')
+            await context.bot.send_message(chat_id=update.message.chat.id, text=ans['db_err'])
         except Exception as err:
             logging.error(err)
             traceback.print_tb(err.__traceback__)
