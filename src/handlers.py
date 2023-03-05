@@ -5,6 +5,7 @@ import logging
 import traceback
 from io import BytesIO
 
+import psycopg2
 import requests
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -33,13 +34,19 @@ def error_handler(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await func(update, context)
-        except PendingRollbackError as err:
+        except (SQLAlchemyError, psycopg2.Error)as err:
             logging.warning(err)
             traceback.print_tb(err.__traceback__)
+            global session
+            global engine
+            global Session
+
             session.rollback()
-        except SQLAlchemyError as err:
-            logging.error(err)
-            traceback.print_tb(err.__traceback__)
+            engine = create_engine(url=settings.DB_DSN, pool_pre_ping=True, isolation_level="AUTOCOMMIT")
+            Session = sessionmaker(bind=engine)
+            session = Session()
+            session.rollback()
+
             await context.bot.send_message(chat_id=update.message.chat.id, text=ans['db_err'])
         except Exception as err:
             logging.error(err)
