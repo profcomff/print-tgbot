@@ -9,7 +9,7 @@ import psycopg2
 import requests
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import SQLAlchemyError, PendingRollbackError
+from sqlalchemy.exc import SQLAlchemyError
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
@@ -26,6 +26,18 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 
+def reconnect_session():
+    global engine
+    global Session
+    global session
+
+    session.rollback()
+    engine = create_engine(url=settings.DB_DSN, pool_pre_ping=True, isolation_level="AUTOCOMMIT")
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    session.rollback()
+
+
 async def native_error_handler(update, context):
     pass
 
@@ -33,20 +45,12 @@ async def native_error_handler(update, context):
 def error_handler(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
+            reconnect_session()
             await func(update, context)
         except (SQLAlchemyError, psycopg2.Error)as err:
             logging.warning(err)
             traceback.print_tb(err.__traceback__)
-            global session
-            global engine
-            global Session
-
-            session.rollback()
-            engine = create_engine(url=settings.DB_DSN, pool_pre_ping=True, isolation_level="AUTOCOMMIT")
-            Session = sessionmaker(bind=engine)
-            session = Session()
-            session.rollback()
-
+            reconnect_session()
             await context.bot.send_message(chat_id=update.message.chat.id, text=ans['db_err'])
         except Exception as err:
             logging.error(err)
