@@ -103,8 +103,7 @@ async def handler_button_browser(update: Update, context: CallbackContext) -> No
     elif update.callback_query.data.startswith('print_'):
         await __print_settings_solver(update, context)
         return
-    elif update.callback_query.data.startswith('qr_'):
-        return
+
     else:
         text, reply_markup = ans['unknown_keyboard_payload'], None
 
@@ -118,7 +117,7 @@ async def handler_button_browser(update: Update, context: CallbackContext) -> No
 async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans['unknown_command'])
     logging.info(f'[{update.message.from_user.id} {update.message.from_user.full_name}]'
-                 f' unknown_command: {repr(update.message.text)}')
+                 f'unknown_command: {repr(update.message.text)}')
 
 
 @error_handler
@@ -152,8 +151,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if rfile.status_code == 200:
             reply_markup = InlineKeyboardMarkup(
                 [[InlineKeyboardButton(text=ans['qr'],
-                                       web_app=WebAppInfo(ans['qr_print'].format(settings.PRINT_URL_QR, pin)),
-                                       callback_data=f'qr_{pin}')],
+                                       web_app=WebAppInfo(ans['qr_print'].format(settings.PRINT_URL_QR, pin)))],
                  [InlineKeyboardButton(ans['kb_print'], callback_data=f'print_settings_{pin}')]])
             await update.message.reply_text(
                 text=ans['send_to_print'].format(update.message.document.file_name, pin),
