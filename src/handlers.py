@@ -117,7 +117,7 @@ async def handler_button_browser(update: Update, context: CallbackContext) -> No
 async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans['unknown_command'])
     logging.info(f'[{update.message.from_user.id} {update.message.from_user.full_name}]'
-                 f'unknown_command: {repr(update.message.text)}')
+                 f' unknown_command: {repr(update.message.text)}')
 
 
 @error_handler
@@ -126,20 +126,22 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if requisites is None:
         await context.bot.send_message(chat_id=update.message.chat.id,
                                        text=ans['doc_not_accepted'])
-        logging.warning(f'[{update.message.from_user.id} {update.message.from_user.full_name}] print with no auth')
+        logging.warning(f'[{update.message.from_user.id} {update.message.from_user.full_name}] try print with no auth')
         return
     try:
         filebytes, filename = await __get_attachments(update, context)
-        logging.info(f'[{update.message.from_user.id} {update.message.from_user.full_name}] print attachments get OK')
+        logging.info(f'[{update.message.from_user.id} {update.message.from_user.full_name}] get attachments OK')
     except FileSizeError:
         await update.message.reply_text(text=ans['file_size_error'].format(update.message.document.file_name),
                                         reply_to_message_id=update.message.id,
                                         parse_mode=ParseMode('HTML'))
-        logging.warning(f'[{update.message.from_user.id} {update.message.from_user.full_name}] print FileSizeError')
+        logging.warning(f'[{update.message.from_user.id} {update.message.from_user.full_name}] get attachments'
+                        f'FileSizeError')
         return
     except TelegramError:
         await update.message.reply_text(text=ans['download_error'], reply_to_message_id=update.message.id)
-        logging.warning(f'[{update.message.from_user.id} {update.message.from_user.full_name}] print TelegramError')
+        logging.warning(f'[{update.message.from_user.id} {update.message.from_user.full_name}] get attachments'
+                        f'download_error')
         return
 
     r = requests.post(settings.PRINT_URL + '/file',
