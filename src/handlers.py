@@ -62,6 +62,12 @@ def error_handler(func):
 
 
 def log_name(update):
+    """
+    Get from update user id, username and message id.
+    Created for short code in logging
+    :param update:
+    :return: String with
+    """
     if update.message is None:
         ucq = update.callback_query
         return f"[{ucq.from_user.id} {ucq.from_user.full_name}] [{ucq.message.id}]"
