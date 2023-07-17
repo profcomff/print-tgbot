@@ -26,6 +26,8 @@ tg_logger = logging.getLogger("telegram.ext._updater")
 tg_logger.propagate = False
 tg_logger.addHandler(tg_log_handler)
 
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
