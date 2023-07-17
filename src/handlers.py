@@ -76,6 +76,7 @@ def log_formatter(func):
         else:
             logging.info(f'{log_name(update)} [{func.__name__}] callback_data: {update.callback_query.data}')
         await func(update, context)
+
     return wrapper
 
 
