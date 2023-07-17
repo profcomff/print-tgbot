@@ -22,7 +22,7 @@ from src.settings import Settings
 
 
 settings = Settings()
-engine = create_engine(url=settings.DB_DSN, pool_pre_ping=True, isolation_level="AUTOCOMMIT")
+engine = create_engine(url=str(settings.DB_DSN), pool_pre_ping=True, isolation_level="AUTOCOMMIT")
 Session = sessionmaker(bind=engine)
 session = Session()
 
@@ -33,7 +33,7 @@ def reconnect_session():
     global session
 
     session.rollback()
-    engine = create_engine(url=settings.DB_DSN, pool_pre_ping=True, isolation_level="AUTOCOMMIT")
+    engine = create_engine(url=str(settings.DB_DSN), pool_pre_ping=True, isolation_level="AUTOCOMMIT")
     Session = sessionmaker(bind=engine)
     session = Session()
     session.rollback()

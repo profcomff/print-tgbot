@@ -1,6 +1,7 @@
 python-telegram-bot
-SQLAlchemy
-alembic
 requests
-pydantic
+alembic
+SQLAlchemy
 psycopg2-binary
+pydantic
+pydantic-settings
