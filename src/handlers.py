@@ -40,7 +40,7 @@ def reconnect_session():
     session.rollback()
 
 
-async def native_error_handler(update, context):
+async def native_error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pass
 
 
