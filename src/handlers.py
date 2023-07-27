@@ -172,7 +172,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     r = requests.post(
         settings.PRINT_URL + "/file",
-        json={"surname": requisites[1], "number": requisites[2], "filename": filename},
+        json={"surname": requisites[1], "number": requisites[2], "filename": filename, "source": "tgbot"},
     )
     if r.status_code == 200:
         pin = r.json()["pin"]
