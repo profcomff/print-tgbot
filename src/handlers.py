@@ -25,19 +25,6 @@ from src.settings import Settings
 settings = Settings()
 engine = create_engine(url=str(settings.DB_DSN), pool_pre_ping=True, isolation_level="AUTOCOMMIT")
 Session = sessionmaker(bind=engine)
-session = Session()
-
-
-def reconnect_session():
-    global engine
-    global Session
-    global session
-
-    session.rollback()
-    engine = create_engine(url=str(settings.DB_DSN), pool_pre_ping=True, isolation_level="AUTOCOMMIT")
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    session.rollback()
 
 
 async def native_error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -47,12 +34,10 @@ async def native_error_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 def error_handler(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
-            reconnect_session()
             await func(update, context)
         except (SQLAlchemyError, psycopg2.Error) as err:
             logging.error(err)
             traceback.print_tb(err.__traceback__)
-            reconnect_session()
             await context.bot.send_message(chat_id=update.message.chat.id, text=ans["db_err"])
         except Exception as err:
             logging.error(err)
@@ -241,20 +226,14 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     chat_id = update.message.chat.id
 
-    async def text_fail():
-        if session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none() is None:
-            await context.bot.send_message(chat_id=chat_id, text=ans["val_need"])
-            logging.warning(f"{log_name(update)} val_need")
-        else:
-            await context.bot.send_message(chat_id=chat_id, text=ans["val_update_fail"])
-            logging.warning(f"{log_name(update)} val_update_fail")
-
-    if text is None:
-        await text_fail()
-        return
-
-    if len(text.split("\n")) != 2:
-        await text_fail()
+    if text is None or len(text.split("\n")) != 2:
+        with Session() as session:
+            if session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none() is None:
+                await context.bot.send_message(chat_id=chat_id, text=ans["val_need"])
+                logging.warning(f"{log_name(update)} val_need")
+            else:
+                await context.bot.send_message(chat_id=chat_id, text=ans["val_update_fail"])
+                logging.warning(f"{log_name(update)} val_update_fail")
         return
 
     if len(text.split("\n")) == 2:
@@ -265,25 +244,26 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             settings.PRINT_URL + "/is_union_member",
             params=dict(surname=surname, v=1, number=number),
         )
-        data: TgUser | None = session.query(TgUser).filter(TgUser.tg_id == update.effective_user.id).one_or_none()
-        if r.json() and data is None:
-            session.add(TgUser(tg_id=chat_id, surname=surname, number=number))
-            session.commit()
-            await context.bot.send_message(chat_id=chat_id, text=ans["val_pass"])
-            marketing.register(tg_id=chat_id, surname=surname, number=number)
-            logging.info(f"{log_name(update)} register OK: {surname} {number}")
-            return True
-        elif r.json() and data is not None:
-            data.surname = surname
-            data.number = number
-            await context.bot.send_message(chat_id=chat_id, text=ans["val_update_pass"])
-            marketing.re_register(tg_id=chat_id, surname=surname, number=number)
-            logging.info(f"{log_name(update)} register repeat OK: {surname} {number}")
-            return True
-        elif r.json() is False:
-            await context.bot.send_message(chat_id=chat_id, text=ans["val_fail"])
-            marketing.register_exc_wrong(tg_id=chat_id, surname=surname, number=number)
-            logging.info(f"{log_name(update)} register val_fail: {surname} {number}")
+        with Session() as session:
+            data: TgUser | None = session.query(TgUser).filter(TgUser.tg_id == update.effective_user.id).one_or_none()
+            if r.json() and data is None:
+                session.add(TgUser(tg_id=chat_id, surname=surname, number=number))
+                session.commit()
+                await context.bot.send_message(chat_id=chat_id, text=ans["val_pass"])
+                marketing.register(tg_id=chat_id, surname=surname, number=number)
+                logging.info(f"{log_name(update)} register OK: {surname} {number}")
+                return True
+            elif r.json() and data is not None:
+                data.surname = surname
+                data.number = number
+                await context.bot.send_message(chat_id=chat_id, text=ans["val_update_pass"])
+                marketing.re_register(tg_id=chat_id, surname=surname, number=number)
+                logging.info(f"{log_name(update)} register repeat OK: {surname} {number}")
+                return True
+            elif r.json() is False:
+                await context.bot.send_message(chat_id=chat_id, text=ans["val_fail"])
+                marketing.register_exc_wrong(tg_id=chat_id, surname=surname, number=number)
+                logging.info(f"{log_name(update)} register val_fail: {surname} {number}")
 
 
 async def __print_settings_solver(update: Update, context: CallbackContext):
@@ -333,15 +313,15 @@ async def __print_settings_solver(update: Update, context: CallbackContext):
 
 
 def __auth(update):
-    chat_id = update.effective_user.id
-    tg_user: TgUser | None = session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none()
-    if tg_user is not None:
-        r = requests.get(
-            settings.PRINT_URL + "/is_union_member",
-            params=dict(surname=tg_user.surname, number=tg_user.number, v=1),
-        )
-        if r.json():
-            return tg_user.tg_id, tg_user.surname, tg_user.number
+    with Session() as session:
+        tg_user: TgUser | None = session.query(TgUser).filter(TgUser.tg_id == update.effective_user.id).one_or_none()
+        if tg_user is not None:
+            r = requests.get(
+                settings.PRINT_URL + "/is_union_member",
+                params=dict(surname=tg_user.surname, number=tg_user.number, v=1),
+            )
+            if r.json():
+                return tg_user.tg_id, tg_user.surname, tg_user.number
 
 
 def __change_message_by_auth(update, text, keyboard):
