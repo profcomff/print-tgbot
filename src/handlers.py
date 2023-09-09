@@ -1,15 +1,11 @@
 # Marakulin Andrey https://github.com/Annndruha
 # 2023
 
-import functools
 import logging
-import traceback
 from io import BytesIO
 
-import psycopg2
 import requests
 from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
 from telegram.constants import ParseMode
@@ -19,6 +15,8 @@ from telegram.ext import CallbackContext, ContextTypes
 from src import marketing
 from src.answers import ans
 from src.db import TgUser
+from src.errors_solver import errors_solver
+from src.log_formatter import log_actor, log_formatter
 from src.settings import Settings
 
 
@@ -27,51 +25,7 @@ engine = create_engine(url=str(settings.DB_DSN), pool_pre_ping=True, isolation_l
 Session = sessionmaker(bind=engine)
 
 
-async def native_error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
-
-
-def error_handler(func):
-    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        try:
-            await func(update, context)
-        except (SQLAlchemyError, psycopg2.Error) as err:
-            logging.error(err)
-            traceback.print_tb(err.__traceback__)
-            await context.bot.send_message(chat_id=update.message.chat.id, text=ans["db_err"])
-        except Exception as err:
-            logging.error(err)
-            traceback.print_tb(err.__traceback__)
-
-    return wrapper
-
-
-def log_name(update):
-    """
-    Get from update user id, username and message id.
-    Created for short code in logging
-    :param update:
-    :return: String with
-    """
-    if update.message is None:
-        ucq = update.callback_query
-        return f"[{ucq.from_user.id} {ucq.from_user.full_name}] [{ucq.message.id}]"
-    return f'[{update.message.from_user.id} {update.message.from_user.full_name}]'
-
-
-def log_formatter(func):
-    @functools.wraps(func)
-    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.callback_query is None:
-            logging.info(f'{log_name(update)} [{func.__name__}]: {repr(update.message.text)}')
-        else:
-            logging.info(f'{log_name(update)} [{func.__name__}] callback_data: {update.callback_query.data}')
-        await func(update, context)
-
-    return wrapper
-
-
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard_base = [[InlineKeyboardButton(ans["about"], callback_data="to_about")]]
@@ -79,13 +33,13 @@ async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text=text, reply_markup=reply_markup, disable_web_page_preview=True)
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans["help"], disable_web_page_preview=True, parse_mode=ParseMode("HTML"))
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update)
@@ -95,7 +49,7 @@ async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(ans["val_info"].format(*requisites), parse_mode=ParseMode("HTML"))
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_button_browser(update: Update, context: CallbackContext) -> None:
     if update.callback_query.data == "to_hello":
@@ -125,34 +79,34 @@ async def handler_button_browser(update: Update, context: CallbackContext) -> No
     )
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans["unknown_command"])
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update)
     if requisites is None:
         await context.bot.send_message(chat_id=update.message.chat.id, text=ans["doc_not_accepted"])
-        logging.warning(f"{log_name(update)} try print with no auth")
+        logging.warning(f"{log_actor(update)} try print with no auth")
         return
     try:
         filebytes, filename = await __get_attachments(update, context)
-        logging.info(f"{log_name(update)} get attachments OK")
+        logging.info(f"{log_actor(update)} get attachments OK")
     except FileSizeError:
         await update.message.reply_text(
             text=ans["file_size_error"].format(update.message.document.file_name),
             reply_to_message_id=update.message.id,
             parse_mode=ParseMode("HTML"),
         )
-        logging.warning(f"{log_name(update)} get attachments" f"FileSizeError")
+        logging.warning(f"{log_actor(update)} get attachments FileSizeError")
         return
     except TelegramError:
         await update.message.reply_text(text=ans["download_error"], reply_to_message_id=update.message.id)
-        logging.warning(f"{log_name(update)} get attachments" f"download_error")
+        logging.warning(f"{log_actor(update)} get attachments download_error")
         return
 
     r = requests.post(
@@ -189,7 +143,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 disable_web_page_preview=True,
                 parse_mode=ParseMode("HTML"),
             )
-            logging.info(f"{log_name(update)} print success")
+            logging.info(f"{log_actor(update)} print success")
             marketing.print_success(
                 tg_id=update.message.chat.id,
                 surname=requisites[1],
@@ -203,24 +157,30 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_to_message_id=update.message.id,
             parse_mode=ParseMode("HTML"),
         )
-        logging.warning(f"{log_name(update)} print api 413 SizeErr")
+        logging.warning(f"{log_actor(update)} print api 413 SizeErr")
         return
     await context.bot.send_message(
         chat_id=update.effective_user.id,
         text=ans["print_err"],
         parse_mode=ParseMode("HTML"),
     )
-    logging.warning(f"{log_name(update)} print unknown error")
+    logging.warning(f"{log_actor(update)} print unknown error")
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_mismatch_doctype(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans["only_pdf"])
     marketing.print_exc_format(tg_id=update.message.chat_id)
 
 
-@error_handler
+@errors_solver
+@log_formatter
+async def handler_other_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Сообщение не распознано.\nЧтобы открыть инструкцию введите: /help')
+
+
+@errors_solver
 @log_formatter
 async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
@@ -230,10 +190,10 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
         with Session() as session:
             if session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none() is None:
                 await context.bot.send_message(chat_id=chat_id, text=ans["val_need"])
-                logging.warning(f"{log_name(update)} val_need")
+                logging.warning(f"{log_actor(update)} val_need")
             else:
                 await context.bot.send_message(chat_id=chat_id, text=ans["val_update_fail"])
-                logging.warning(f"{log_name(update)} val_update_fail")
+                logging.warning(f"{log_actor(update)} val_update_fail")
         return
 
     if len(text.split("\n")) == 2:
@@ -251,19 +211,19 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 session.commit()
                 await context.bot.send_message(chat_id=chat_id, text=ans["val_pass"])
                 marketing.register(tg_id=chat_id, surname=surname, number=number)
-                logging.info(f"{log_name(update)} register OK: {surname} {number}")
+                logging.info(f"{log_actor(update)} register OK: {surname} {number}")
                 return True
             elif r.json() and data is not None:
                 data.surname = surname
                 data.number = number
                 await context.bot.send_message(chat_id=chat_id, text=ans["val_update_pass"])
                 marketing.re_register(tg_id=chat_id, surname=surname, number=number)
-                logging.info(f"{log_name(update)} register repeat OK: {surname} {number}")
+                logging.info(f"{log_actor(update)} register repeat OK: {surname} {number}")
                 return True
             elif r.json() is False:
                 await context.bot.send_message(chat_id=chat_id, text=ans["val_fail"])
                 marketing.register_exc_wrong(tg_id=chat_id, surname=surname, number=number)
-                logging.info(f"{log_name(update)} register val_fail: {surname} {number}")
+                logging.info(f"{log_actor(update)} register val_fail: {surname} {number}")
 
 
 async def __print_settings_solver(update: Update, context: CallbackContext):
