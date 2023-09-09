@@ -15,9 +15,9 @@ from src.handlers import (
     handler_register,
     handler_start,
     handler_unknown_command,
+    handler_other_messages
 )
 from src.settings import Settings
-
 
 tg_log_handler = logging.FileHandler("tgbot_telegram_updater.log")
 tg_log_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
@@ -41,7 +41,8 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("help", handler_help, filters=filters.UpdateType.MESSAGE))
     application.add_handler(CommandHandler("auth", handler_auth, filters=filters.UpdateType.MESSAGE))
     application.add_handler(MessageHandler(filters.COMMAND, handler_unknown_command))
-    application.add_handler(MessageHandler(filters.Document.MimeType("application/pdf"), handler_print))
+    application.add_handler(MessageHandler(filters.Document.PDF, handler_print))
     application.add_handler(MessageHandler(filters.Document.ALL, handler_mismatch_doctype))
-    application.add_handler(MessageHandler(filters.UpdateType.MESSAGE, handler_register))
+    application.add_handler(MessageHandler(filters.UpdateType.MESSAGE & filters.TEXT, handler_register))
+    application.add_handler(MessageHandler(filters.UpdateType.MESSAGE, handler_other_messages))
     application.run_polling()
