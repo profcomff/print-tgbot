@@ -13,13 +13,13 @@ from telegram.error import TelegramError
 from telegram.ext import CallbackContext, ContextTypes
 
 from src import marketing
-from src.answers import ans
+from src.answers import Answers
 from src.db import TgUser
 from src.errors_solver import errors_solver
 from src.log_formatter import log_actor, log_formatter
 from src.settings import Settings
 
-
+ans = Answers()
 settings = Settings()
 engine = create_engine(url=str(settings.DB_DSN), pool_pre_ping=True, isolation_level="AUTOCOMMIT")
 Session = sessionmaker(bind=engine)
@@ -28,15 +28,15 @@ Session = sessionmaker(bind=engine)
 @errors_solver
 @log_formatter
 async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard_base = [[InlineKeyboardButton(ans["about"], callback_data="to_about")]]
-    text, reply_markup = __change_message_by_auth(update, ans["hello"], keyboard_base)
+    keyboard_base = [[InlineKeyboardButton(ans.about, callback_data="to_about")]]
+    text, reply_markup = __change_message_by_auth(update, ans.hello, keyboard_base)
     await update.message.reply_text(text=text, reply_markup=reply_markup, disable_web_page_preview=True)
 
 
 @errors_solver
 @log_formatter
 async def handler_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(ans["help"], disable_web_page_preview=True, parse_mode=ParseMode("HTML"))
+    await update.message.reply_text(ans.help, disable_web_page_preview=True, parse_mode=ParseMode("HTML"))
 
 
 @errors_solver
@@ -44,32 +44,32 @@ async def handler_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update)
     if requisites is None:
-        await update.message.reply_text(ans["val_need"])
+        await update.message.reply_text(ans.val_need)
     else:
-        await update.message.reply_text(ans["val_info"].format(*requisites), parse_mode=ParseMode("HTML"))
+        await update.message.reply_text(ans.val_info.format(*requisites), parse_mode=ParseMode("HTML"))
 
 
 @errors_solver
 @log_formatter
 async def handler_button_browser(update: Update, context: CallbackContext) -> None:
     if update.callback_query.data == "to_hello":
-        keyboard_base = [[InlineKeyboardButton(ans["about"], callback_data="to_about")]]
-        text, reply_markup = __change_message_by_auth(update, ans["hello"], keyboard_base)
+        keyboard_base = [[InlineKeyboardButton(ans.about, callback_data="to_about")]]
+        text, reply_markup = __change_message_by_auth(update, ans.hello, keyboard_base)
 
     elif update.callback_query.data == "to_about":
-        keyboard_base = [[InlineKeyboardButton(ans["back"], callback_data="to_hello")]]
-        text, reply_markup = __change_message_by_auth(update, ans["help"], keyboard_base)
+        keyboard_base = [[InlineKeyboardButton(ans.back, callback_data="to_hello")]]
+        text, reply_markup = __change_message_by_auth(update, ans.help, keyboard_base)
 
     elif update.callback_query.data == "to_auth":
-        keyboard_base = [[InlineKeyboardButton(ans["back"], callback_data="to_hello")]]
-        text, reply_markup = ans["val_need"], InlineKeyboardMarkup(keyboard_base)
+        keyboard_base = [[InlineKeyboardButton(ans.back, callback_data="to_hello")]]
+        text, reply_markup = ans.val_need, InlineKeyboardMarkup(keyboard_base)
 
     elif update.callback_query.data.startswith("print_"):
         await __print_settings_solver(update, context)
         return
 
     else:
-        text, reply_markup = ans["unknown_keyboard_payload"], None
+        text, reply_markup = ans.unknown_keyboard_payload, None
 
     await update.callback_query.edit_message_text(
         text=text,
@@ -82,7 +82,7 @@ async def handler_button_browser(update: Update, context: CallbackContext) -> No
 @errors_solver
 @log_formatter
 async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(ans["unknown_command"])
+    await update.message.reply_text(ans.unknown_command)
 
 
 @errors_solver
@@ -90,7 +90,7 @@ async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_
 async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update)
     if requisites is None:
-        await context.bot.send_message(chat_id=update.message.chat.id, text=ans["doc_not_accepted"])
+        await context.bot.send_message(chat_id=update.message.chat.id, text=ans.doc_not_accepted)
         logging.warning(f"{log_actor(update)} try print with no auth")
         return
     try:
@@ -98,14 +98,14 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.info(f"{log_actor(update)} get attachments OK")
     except FileSizeError:
         await update.message.reply_text(
-            text=ans["file_size_error"].format(update.message.document.file_name),
+            text=ans.file_size_error.format(update.message.document.file_name),
             reply_to_message_id=update.message.id,
             parse_mode=ParseMode("HTML"),
         )
         logging.warning(f"{log_actor(update)} get attachments FileSizeError")
         return
     except TelegramError:
-        await update.message.reply_text(text=ans["download_error"], reply_to_message_id=update.message.id)
+        await update.message.reply_text(text=ans.download_error, reply_to_message_id=update.message.id)
         logging.warning(f"{log_actor(update)} get attachments download_error")
         return
 
@@ -129,15 +129,15 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [
                     [
                         InlineKeyboardButton(
-                            text=ans["qr"],
-                            web_app=WebAppInfo(ans["qr_print"].format(settings.PRINT_URL_QR, pin)),
+                            text=ans.qr,
+                            web_app=WebAppInfo(ans.qr_print.format(settings.PRINT_URL_QR, pin)),
                         )
                     ],
-                    [InlineKeyboardButton(ans["kb_print"], callback_data=f"print_settings_{pin}")],
+                    [InlineKeyboardButton(ans.kb_print, callback_data=f"print_settings_{pin}")],
                 ]
             )
             await update.message.reply_text(
-                text=ans["send_to_print"].format(update.message.document.file_name, pin),
+                text=ans.send_to_print.format(update.message.document.file_name, pin),
                 reply_markup=reply_markup,
                 reply_to_message_id=update.message.id,
                 disable_web_page_preview=True,
@@ -153,7 +153,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif r.status_code == 413:
         await update.message.reply_text(
-            text=ans["file_size_error"].format(update.message.document.file_name),
+            text=ans.file_size_error.format(update.message.document.file_name),
             reply_to_message_id=update.message.id,
             parse_mode=ParseMode("HTML"),
         )
@@ -161,7 +161,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await context.bot.send_message(
         chat_id=update.effective_user.id,
-        text=ans["print_err"],
+        text=ans.print_err,
         parse_mode=ParseMode("HTML"),
     )
     logging.warning(f"{log_actor(update)} print unknown error")
@@ -170,14 +170,14 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @errors_solver
 @log_formatter
 async def handler_mismatch_doctype(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(ans["only_pdf"])
+    await update.message.reply_text(ans.only_pdf)
     marketing.print_exc_format(tg_id=update.message.chat_id)
 
 
 @errors_solver
 @log_formatter
 async def handler_other_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Сообщение не распознано.\nЧтобы открыть инструкцию введите: /help')
+    await update.message.reply_text(ans.err_message_type)
 
 
 @errors_solver
@@ -189,10 +189,10 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text is None or len(text.split("\n")) != 2:
         with Session() as session:
             if session.query(TgUser).filter(TgUser.tg_id == chat_id).one_or_none() is None:
-                await context.bot.send_message(chat_id=chat_id, text=ans["val_need"])
+                await context.bot.send_message(chat_id=chat_id, text=ans.val_need)
                 logging.warning(f"{log_actor(update)} val_need")
             else:
-                await context.bot.send_message(chat_id=chat_id, text=ans["val_update_fail"])
+                await context.bot.send_message(chat_id=chat_id, text=ans.val_update_fail)
                 logging.warning(f"{log_actor(update)} val_update_fail")
         return
 
@@ -209,19 +209,19 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if r.json() and data is None:
                 session.add(TgUser(tg_id=chat_id, surname=surname, number=number))
                 session.commit()
-                await context.bot.send_message(chat_id=chat_id, text=ans["val_pass"])
+                await context.bot.send_message(chat_id=chat_id, text=ans.val_pass)
                 marketing.register(tg_id=chat_id, surname=surname, number=number)
                 logging.info(f"{log_actor(update)} register OK: {surname} {number}")
                 return True
             elif r.json() and data is not None:
                 data.surname = surname
                 data.number = number
-                await context.bot.send_message(chat_id=chat_id, text=ans["val_update_pass"])
+                await context.bot.send_message(chat_id=chat_id, text=ans.val_update_pass)
                 marketing.re_register(tg_id=chat_id, surname=surname, number=number)
                 logging.info(f"{log_actor(update)} register repeat OK: {surname} {number}")
                 return True
             elif r.json() is False:
-                await context.bot.send_message(chat_id=chat_id, text=ans["val_fail"])
+                await context.bot.send_message(chat_id=chat_id, text=ans.val_fail)
                 marketing.register_exc_wrong(tg_id=chat_id, surname=surname, number=number)
                 logging.info(f"{log_actor(update)} register val_fail: {surname} {number}")
 
@@ -233,7 +233,7 @@ async def __print_settings_solver(update: Update, context: CallbackContext):
     if r.status_code == 200:
         options = r.json()["options"]
     else:
-        await update.callback_query.message.reply_text(ans["settings_change_fail"])
+        await update.callback_query.message.reply_text(ans.settings_change_fail)
         return
 
     if button == "copies":
@@ -241,29 +241,29 @@ async def __print_settings_solver(update: Update, context: CallbackContext):
     elif button == "twosided":
         options["two_sided"] = not options["two_sided"]
     else:
-        await context.bot.answer_callback_query(update.callback_query.id, ans["settings_warning"])
+        await context.bot.answer_callback_query(update.callback_query.id, ans.settings_warning)
 
     r = requests.patch(settings.PRINT_URL + f"""/file/{pin}""", json={"options": options})
     if r.status_code != 200:
-        await update.callback_query.message.reply_text(ans["settings_change_fail"])
+        await update.callback_query.message.reply_text(ans.settings_change_fail)
         return
 
     keyboard = [
         [
             InlineKeyboardButton(
-                text=ans["qr"],
-                web_app=WebAppInfo(ans["qr_print"].format(settings.PRINT_URL_QR, pin)),
+                text=ans.qr,
+                web_app=WebAppInfo(ans.qr_print.format(settings.PRINT_URL_QR, pin)),
             )
         ],
         [
             InlineKeyboardButton(
-                f'{ans["kb_print_copies"]} {options["copies"]}',
+                f'{ans.kb_print_copies} {options["copies"]}',
                 callback_data=f"print_copies_{pin}",
             )
         ],
         [
             InlineKeyboardButton(
-                ans["kb_print_two_side"] if options["two_sided"] else ans["kb_print_side"],
+                ans.kb_print_two_side if options["two_sided"] else ans.kb_print_side,
                 callback_data=f"print_twosided_{pin}",
             )
         ],
@@ -286,8 +286,8 @@ def __auth(update):
 
 def __change_message_by_auth(update, text, keyboard):
     if __auth(update) is None:
-        text += ans["val_addition"]
-        keyboard.append([InlineKeyboardButton(ans["auth"], callback_data="to_auth")])
+        text += ans.val_addition
+        keyboard.append([InlineKeyboardButton(ans.auth, callback_data="to_auth")])
     return text, InlineKeyboardMarkup(keyboard)
 
 

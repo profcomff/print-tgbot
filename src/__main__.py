@@ -16,6 +16,7 @@ from src.handlers import (
     handler_start,
     handler_unknown_command,
 )
+from src.errors_solver import native_error_handler
 from src.settings import Settings
 
 
@@ -45,4 +46,5 @@ if __name__ == "__main__":
     application.add_handler(MessageHandler(filters.Document.ALL, handler_mismatch_doctype))
     application.add_handler(MessageHandler(filters.UpdateType.MESSAGE & filters.TEXT, handler_register))
     application.add_handler(MessageHandler(filters.UpdateType.MESSAGE, handler_other_messages))
+    application.add_error_handler(native_error_handler)
     application.run_polling()

@@ -10,7 +10,13 @@ from telegram import Update
 from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 
-from src.answers import ans
+from src.answers import Answers
+
+ans = Answers()
+
+
+async def native_error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    pass
 
 
 def errors_solver(func):
@@ -28,7 +34,7 @@ def errors_solver(func):
         except (SQLAlchemyError, psycopg2.Error) as err:
             logging.error(err)
             traceback.print_tb(err.__traceback__)
-            await context.bot.send_message(chat_id=update.message.chat.id, text=ans["db_err"])
+            await context.bot.send_message(chat_id=update.message.chat.id, text=ans.db_err)
         except Exception as err:
             logging.error(err)
             traceback.print_tb(err.__traceback__)
