@@ -103,11 +103,11 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_to_message_id=update.message.id,
             parse_mode=ParseMode("HTML"),
         )
-        logging.warning(f"{log_actor(update)} get attachments" f"FileSizeError")
+        logging.warning(f"{log_actor(update)} get attachments FileSizeError")
         return
     except TelegramError:
         await update.message.reply_text(text=ans["download_error"], reply_to_message_id=update.message.id)
-        logging.warning(f"{log_actor(update)} get attachments" f"download_error")
+        logging.warning(f"{log_actor(update)} get attachments download_error")
         return
 
     r = requests.post(
