@@ -3,13 +3,10 @@
 
 import functools
 import logging
-import traceback
 from io import BytesIO
 
-import psycopg2
 import requests
 from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
 from telegram.constants import ParseMode
@@ -20,30 +17,12 @@ from src import marketing
 from src.answers import ans
 from src.db import TgUser
 from src.settings import Settings
+from src.errors_solver import errors_solver
 
 
 settings = Settings()
 engine = create_engine(url=str(settings.DB_DSN), pool_pre_ping=True, isolation_level="AUTOCOMMIT")
 Session = sessionmaker(bind=engine)
-
-
-async def native_error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
-
-
-def error_handler(func):
-    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        try:
-            await func(update, context)
-        except (SQLAlchemyError, psycopg2.Error) as err:
-            logging.error(err)
-            traceback.print_tb(err.__traceback__)
-            await context.bot.send_message(chat_id=update.message.chat.id, text=ans["db_err"])
-        except Exception as err:
-            logging.error(err)
-            traceback.print_tb(err.__traceback__)
-
-    return wrapper
 
 
 def log_name(update):
@@ -71,7 +50,7 @@ def log_formatter(func):
     return wrapper
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard_base = [[InlineKeyboardButton(ans["about"], callback_data="to_about")]]
@@ -79,13 +58,13 @@ async def handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text=text, reply_markup=reply_markup, disable_web_page_preview=True)
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans["help"], disable_web_page_preview=True, parse_mode=ParseMode("HTML"))
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update)
@@ -95,7 +74,7 @@ async def handler_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(ans["val_info"].format(*requisites), parse_mode=ParseMode("HTML"))
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_button_browser(update: Update, context: CallbackContext) -> None:
     if update.callback_query.data == "to_hello":
@@ -125,13 +104,13 @@ async def handler_button_browser(update: Update, context: CallbackContext) -> No
     )
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans["unknown_command"])
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     requisites = __auth(update)
@@ -213,14 +192,14 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.warning(f"{log_name(update)} print unknown error")
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_mismatch_doctype(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(ans["only_pdf"])
     marketing.print_exc_format(tg_id=update.message.chat_id)
 
 
-@error_handler
+@errors_solver
 @log_formatter
 async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text

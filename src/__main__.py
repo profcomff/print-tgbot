@@ -4,7 +4,7 @@
 import logging
 
 from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler, MessageHandler
-from telegram.ext.filters import ALL, COMMAND, Document
+from telegram.ext import filters
 
 from src.handlers import (
     handler_auth,
@@ -15,7 +15,6 @@ from src.handlers import (
     handler_register,
     handler_start,
     handler_unknown_command,
-    native_error_handler,
 )
 from src.settings import Settings
 
@@ -37,13 +36,12 @@ logging.basicConfig(
 if __name__ == "__main__":
     settings = Settings()
     application = ApplicationBuilder().token(settings.BOT_TOKEN).build()
-    application.add_handler(CommandHandler("start", handler_start))
-    application.add_handler(CommandHandler("help", handler_help))
-    application.add_handler(CommandHandler("auth", handler_auth))
     application.add_handler(CallbackQueryHandler(handler_button_browser))
-    application.add_handler(MessageHandler(COMMAND, handler_unknown_command))
-    application.add_handler(MessageHandler(Document.MimeType("application/pdf"), handler_print))
-    application.add_handler(MessageHandler(Document.ALL, handler_mismatch_doctype))
-    application.add_handler(MessageHandler(ALL, handler_register))
-    application.add_error_handler(native_error_handler)
+    application.add_handler(CommandHandler("start", handler_start, filters=filters.UpdateType.MESSAGE))
+    application.add_handler(CommandHandler("help", handler_help, filters=filters.UpdateType.MESSAGE))
+    application.add_handler(CommandHandler("auth", handler_auth, filters=filters.UpdateType.MESSAGE))
+    application.add_handler(MessageHandler(filters.COMMAND, handler_unknown_command))
+    application.add_handler(MessageHandler(filters.Document.MimeType("application/pdf"), handler_print))
+    application.add_handler(MessageHandler(filters.Document.ALL, handler_mismatch_doctype))
+    application.add_handler(MessageHandler(filters.UpdateType.MESSAGE, handler_register))
     application.run_polling()
