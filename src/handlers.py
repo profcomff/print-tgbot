@@ -1,7 +1,6 @@
 # Marakulin Andrey https://github.com/Annndruha
 # 2023
 
-import functools
 import logging
 from io import BytesIO
 
