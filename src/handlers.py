@@ -16,9 +16,9 @@ from telegram.ext import CallbackContext, ContextTypes
 from src import marketing
 from src.answers import ans
 from src.db import TgUser
-from src.settings import Settings
 from src.errors_solver import errors_solver
-from src.log_formatter import log_formatter, log_actor
+from src.log_formatter import log_actor, log_formatter
+from src.settings import Settings
 
 
 settings = Settings()

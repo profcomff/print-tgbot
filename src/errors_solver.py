@@ -6,7 +6,6 @@ import traceback
 
 import psycopg2
 from sqlalchemy.exc import SQLAlchemyError
-
 from telegram import Update
 from telegram.error import TelegramError
 from telegram.ext import ContextTypes
@@ -20,6 +19,7 @@ def errors_solver(func):
     If exception is possible to solve, this handler send message with exception type.
     Else just log it.
     """
+
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await func(update, context)
