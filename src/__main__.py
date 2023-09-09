@@ -5,6 +5,7 @@ import logging
 
 from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 
+from src.errors_solver import native_error_handler
 from src.handlers import (
     handler_auth,
     handler_button_browser,
@@ -16,7 +17,6 @@ from src.handlers import (
     handler_start,
     handler_unknown_command,
 )
-from src.errors_solver import native_error_handler
 from src.settings import Settings
 
 
