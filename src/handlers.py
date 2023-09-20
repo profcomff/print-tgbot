@@ -217,6 +217,7 @@ async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             elif r.json() and data is not None:
                 data.surname = surname
                 data.number = number
+                session.commit()
                 await context.bot.send_message(chat_id=chat_id, text=ans.val_update_pass)
                 marketing.re_register(tg_id=chat_id, surname=surname, number=number)
                 logging.info(f'{log_actor(update)} register repeat OK: {surname} {number}')
@@ -275,14 +276,9 @@ async def __print_settings_solver(update: Update, context: CallbackContext):
 
 def __auth(update):
     with Session() as session:
-        tg_user: TgUser | None = session.query(TgUser).filter(TgUser.tg_id == update.effective_user.id).one_or_none()
-        if tg_user is not None:
-            r = requests.get(
-                settings.PRINT_URL + '/is_union_member',
-                params=dict(surname=tg_user.surname, number=tg_user.number, v=1),
-            )
-            if r.json():
-                return tg_user.tg_id, tg_user.surname, tg_user.number
+        data: TgUser | None = session.query(TgUser).filter(TgUser.tg_id == update.effective_user.id).one_or_none()
+        if data is not None:
+            return data.tg_id, data.surname, data.number
 
 
 def __change_message_by_auth(update, text, keyboard):
