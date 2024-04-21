@@ -192,13 +192,6 @@ async def handler_other_messages(update: Update, context: ContextTypes.DEFAULT_T
 
 @errors_solver
 @log_formatter
-async def handler_other_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(ans.unreadable_file_error)
-    marketing.print_exc_format(tg_id=update.message.chat_id)
-
-
-@errors_solver
-@log_formatter
 async def handler_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     chat_id = update.message.chat.id
