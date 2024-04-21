@@ -167,12 +167,14 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         logging.warning(f'{log_actor(update)} print api 415 UnreadableErr')
         return
-    else: context.bot.send_message(
-        chat_id=update.effective_user.id,
-        text=ans.print_err,
-        parse_mode=ParseMode('HTML'),
-    )
+    else:
+        context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text=ans.print_err,
+            parse_mode=ParseMode('HTML'),
+        )
     logging.warning(f'{log_actor(update)} print unknown error')
+
 
 @errors_solver
 @log_formatter
