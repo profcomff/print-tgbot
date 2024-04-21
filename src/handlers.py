@@ -171,7 +171,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await context.bot.send_message(
         chat_id=update.effective_user.id,
-        text=ans.print_err,
+        text=ans.unreadable_file_error,
         parse_mode=ParseMode('HTML'),
     )
     logging.warning(f'{log_actor(update)} print unknown error')
