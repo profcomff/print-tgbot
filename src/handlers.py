@@ -151,7 +151,7 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 number=requisites[2],
             )
             return
-        elif r.status_code == 415:
+        elif rfile.status_code == 415:
             await update.message.reply_text(
                 text=ans.unreadable_file_error.format(update.message.document.file_name),
                 reply_to_message_id=update.message.id,
