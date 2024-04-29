@@ -151,6 +151,14 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 number=requisites[2],
             )
             return
+        elif rfile.status_code == 415:
+            await update.message.reply_text(
+                text=ans.unreadable_file_error.format(update.message.document.file_name),
+                reply_to_message_id=update.message.id,
+                parse_mode=ParseMode('HTML'),
+            )
+            logging.warning(f'{log_actor(update)} print api 415 UnreadableErr')
+            return
 
     elif r.status_code == 413:
         await update.message.reply_text(
@@ -161,14 +169,6 @@ async def handler_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.warning(f'{log_actor(update)} print api 413 SizeErr')
         return
 
-    elif r.status_code == 415:
-        await update.message.reply_text(
-            text=ans.unreadable_file_error.format(update.message.document.file_name),
-            reply_to_message_id=update.message.id,
-            parse_mode=ParseMode('HTML'),
-        )
-        logging.warning(f'{log_actor(update)} print api 415 UnreadableErr')
-        return
     await context.bot.send_message(
         chat_id=update.effective_user.id,
         text=ans.print_err,
