@@ -1,6 +1,7 @@
 # Marakulin Andrey https://github.com/Annndruha
 # 2023
 
+import asyncio
 import logging
 
 from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler, MessageHandler, filters
@@ -17,7 +18,7 @@ from src.handlers import (
     handler_start,
     handler_unknown_command,
 )
-from src.settings import Settings
+from src.settings import get_settings, sync_from_server
 
 
 tg_log_handler = logging.FileHandler("tgbot_telegram_updater.log")
@@ -35,7 +36,8 @@ logging.basicConfig(
 )
 
 if __name__ == "__main__":
-    settings = Settings()
+    asyncio.run(sync_from_server())
+    settings = get_settings()
     application = ApplicationBuilder().token(settings.BOT_TOKEN).build()
     application.add_handler(CallbackQueryHandler(handler_button_browser))
     application.add_handler(CommandHandler("start", handler_start, filters=filters.UpdateType.MESSAGE))

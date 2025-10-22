@@ -17,11 +17,11 @@ from src.answers import Answers
 from src.db import TgUser
 from src.errors_solver import errors_solver
 from src.log_formatter import log_actor, log_formatter
-from src.settings import Settings
+from src.settings import get_settings
 
 
 ans = Answers()
-settings = Settings()
+settings = get_settings()
 engine = create_engine(url=str(settings.DB_DSN), pool_pre_ping=True, isolation_level='AUTOCOMMIT')
 Session = sessionmaker(bind=engine)
 

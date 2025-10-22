@@ -4,10 +4,10 @@ import traceback
 
 import requests
 
-from src.settings import Settings
+from src.settings import get_settings
 
 
-settings = Settings()
+settings = get_settings()
 
 
 def pass_if_exc(func):
