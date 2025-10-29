@@ -6,12 +6,10 @@ import traceback
 
 import psycopg2
 from sqlalchemy.exc import SQLAlchemyError
+from src.answers import Answers
 from telegram import Update
 from telegram.error import TelegramError
 from telegram.ext import ContextTypes
-
-from src.answers import Answers
-
 
 ans = Answers()
 
@@ -31,11 +29,13 @@ def errors_solver(func):
         try:
             await func(update, context)
         except TelegramError as err:
-            logging.error(f'TelegramError: {str(err.message)}')
+            logging.error(f"TelegramError: {str(err.message)}")
         except (SQLAlchemyError, psycopg2.Error) as err:
             logging.error(err)
             traceback.print_tb(err.__traceback__)
-            await context.bot.send_message(chat_id=update.message.chat.id, text=ans.db_err)
+            await context.bot.send_message(
+                chat_id=update.message.chat.id, text=ans.db_err
+            )
         except Exception as err:
             logging.error(err)
             traceback.print_tb(err.__traceback__)

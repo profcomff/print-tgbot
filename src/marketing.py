@@ -3,9 +3,7 @@ import logging
 import traceback
 
 import requests
-
 from src.settings import get_settings
-
 
 settings = get_settings()
 

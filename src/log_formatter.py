@@ -16,18 +16,26 @@ def log_formatter(func):
 
     @functools.wraps(func)
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        actor_handler = f'[{update.effective_user.id} {update.effective_user.full_name}] [{func.__name__}]'
+        actor_handler = f"[{update.effective_user.id} {update.effective_user.full_name}] [{func.__name__}]"
         if update.callback_query is not None:
-            logging.info(f'{actor_handler} [callback {update.callback_query.message.id}]: {update.callback_query.data}')
+            logging.info(
+                f"{actor_handler} [callback {update.callback_query.message.id}]: {update.callback_query.data}"
+            )
         elif update.message is not None:
             if update.message.text is not None:
-                logging.info(f'{actor_handler} [text]: {repr(update.message.text)}')
+                logging.info(f"{actor_handler} [text]: {repr(update.message.text)}")
             elif update.message.document is not None:
-                logging.info(f'{actor_handler} [document]: {repr(update.message.document.file_name)}')
+                logging.info(
+                    f"{actor_handler} [document]: {repr(update.message.document.file_name)}"
+                )
             else:
-                logging.info(f'{actor_handler} [UNKNOWN MESSAGE TYPE: {effective_message_type(update)}]')
+                logging.info(
+                    f"{actor_handler} [UNKNOWN MESSAGE TYPE: {effective_message_type(update)}]"
+                )
         else:
-            logging.info(f'{actor_handler} [UNKNOWN UPDATE TYPE: {effective_message_type(update)}]')
+            logging.info(
+                f"{actor_handler} [UNKNOWN UPDATE TYPE: {effective_message_type(update)}]"
+            )
 
         await func(update, context)
 
@@ -35,4 +43,4 @@ def log_formatter(func):
 
 
 def log_actor(update):
-    return f'[{update.effective_user.id} {update.effective_user.full_name}] >'
+    return f"[{update.effective_user.id} {update.effective_user.full_name}] >"

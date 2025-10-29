@@ -36,7 +36,7 @@ async def sync_from_server():
     """Syncs the settings with server"""
     settings = get_settings()
     response = requests.get(
-        "app.profcomff.com/admin/settings", # Вот тут не уверен с адресом...
+        "app.profcomff.com/admin/settings",  # Вот тут не уверен с адресом...
         headers={"Authorization": f"Bearer {settings.BOT_TOKEN}"},
         timeout=10,
     )
