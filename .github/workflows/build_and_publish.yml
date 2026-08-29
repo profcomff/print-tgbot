@@ -62,12 +62,14 @@ jobs:
         run: |
           docker run \
             --rm \
+            --network=web \
             --env DB_DSN=${{ secrets.DB_DSN }} \
             --env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
             --env MARKETING_URL=${{ vars.MARKETING_URL }} \
             --env PRINT_URL=${{ vars.PRINT_URL }} \
             --env PRINT_URL_QR=${{ vars.PRINT_URL_QR }} \
             --env MAX_PDF_SIZE_MB=${{ vars.MAX_PDF_SIZE_MB }} \
+            --env PROXY_URL='${{ vars.PROXY_URL }}' \
             --name ${{ env.CONTAINER_NAME }}_migration \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test \
             alembic upgrade head
@@ -77,12 +79,14 @@ jobs:
           docker run \
             --detach \
             --restart on-failure:3 \
+            --network=web \
             --env DB_DSN='${{ secrets.DB_DSN }}' \
             --env BOT_TOKEN='${{ secrets.BOT_TOKEN }}' \
             --env MARKETING_URL='${{ vars.MARKETING_URL }}' \
             --env PRINT_URL='${{ vars.PRINT_URL }}' \
             --env PRINT_URL_QR=${{ vars.PRINT_URL_QR }} \
             --env MAX_PDF_SIZE_MB=${{ vars.MAX_PDF_SIZE_MB }} \
+            --env PROXY_URL='${{ vars.PROXY_URL }}' \
             --name ${{ env.CONTAINER_NAME }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
 
@@ -104,12 +108,14 @@ jobs:
         run: |
           docker run \
             --rm \
+            --network=web \
             --env DB_DSN=${{ secrets.DB_DSN }} \
             --env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
             --env MARKETING_URL=${{ vars.MARKETING_URL }} \
             --env PRINT_URL=${{ vars.PRINT_URL }} \
             --env PRINT_URL_QR=${{ vars.PRINT_URL_QR }} \
             --env MAX_PDF_SIZE_MB=${{ vars.MAX_PDF_SIZE_MB }} \
+            --env PROXY_URL='${{ vars.PROXY_URL }}' \
             --name ${{ env.CONTAINER_NAME }}_migration \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
             alembic upgrade head
@@ -119,11 +125,13 @@ jobs:
           docker run \
             --detach \
             --restart always \
+            --network=web \
             --env DB_DSN='${{ secrets.DB_DSN }}' \
             --env BOT_TOKEN='${{ secrets.BOT_TOKEN }}' \
             --env MARKETING_URL='${{ vars.MARKETING_URL }}' \
             --env PRINT_URL='${{ vars.PRINT_URL }}' \
             --env PRINT_URL_QR=${{ vars.PRINT_URL_QR }} \
             --env MAX_PDF_SIZE_MB=${{ vars.MAX_PDF_SIZE_MB }} \
+            --env PROXY_URL='${{ vars.PROXY_URL }}' \
             --name ${{ env.CONTAINER_NAME }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

@@ -36,7 +36,10 @@ logging.basicConfig(
 
 if __name__ == "__main__":
     settings = Settings()
-    application = ApplicationBuilder().token(settings.BOT_TOKEN).build()
+    builder = ApplicationBuilder().token(settings.BOT_TOKEN)
+    if settings.PROXY_URL:
+        builder = builder.proxy(settings.PROXY_URL).get_updates_proxy(settings.PROXY_URL)
+    application = builder.build()
     application.add_handler(CallbackQueryHandler(handler_button_browser))
     application.add_handler(CommandHandler("start", handler_start, filters=filters.UpdateType.MESSAGE))
     application.add_handler(CommandHandler("help", handler_help, filters=filters.UpdateType.MESSAGE))

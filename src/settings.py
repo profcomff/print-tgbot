@@ -11,5 +11,6 @@ class Settings(BaseSettings):
     PRINT_URL: str
     PRINT_URL_QR: str
     MAX_PDF_SIZE_MB: float
+    PROXY_URL: str | None = None
 
     model_config = ConfigDict(case_sensitive=True, env_file=".env", extra="allow")
