@@ -243,6 +243,7 @@ async def __print_settings_solver(update: Update, context: CallbackContext):
     r = requests.get(settings.PRINT_URL + f'''/file/{pin}''')
     if r.status_code == 200:
         options = r.json()['options']
+        options['two_sided'] = False # remove when fixed
     else:
         await update.callback_query.message.reply_text(ans.settings_change_fail)
         return
@@ -250,7 +251,8 @@ async def __print_settings_solver(update: Update, context: CallbackContext):
     if button == 'copies':
         options['copies'] = options['copies'] % 5 + 1
     elif button == 'twosided':
-        options['two_sided'] = not options['two_sided']
+        pass
+        # options['two_sided'] = not options['two_sided']
     else:
         await context.bot.answer_callback_query(update.callback_query.id, ans.settings_warning)
 
