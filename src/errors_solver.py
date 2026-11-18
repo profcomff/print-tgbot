@@ -2,9 +2,9 @@
 # 2023
 
 import logging
-import traceback
 
 import psycopg2
+import requests
 from sqlalchemy.exc import SQLAlchemyError
 from telegram import Update
 from telegram.error import TelegramError
@@ -12,12 +12,7 @@ from telegram.ext import ContextTypes
 
 from src.answers import Answers
 
-
 ans = Answers()
-
-
-async def native_error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
-    pass
 
 
 def errors_solver(func):
@@ -31,13 +26,16 @@ def errors_solver(func):
         try:
             await func(update, context)
         except TelegramError as err:
-            logging.error(f'TelegramError: {str(err.message)}')
-        except (SQLAlchemyError, psycopg2.Error) as err:
-            logging.error(err)
-            traceback.print_tb(err.__traceback__)
-            await context.bot.send_message(chat_id=update.message.chat.id, text=ans.db_err)
-        except Exception as err:
-            logging.error(err)
-            traceback.print_tb(err.__traceback__)
+            logging.error('TelegramError: %s', err.message)
+        except requests.RequestException as err:
+            logging.warning('Print API request failed (%s)', type(err).__name__)
+            if update.effective_message is not None:
+                await update.effective_message.reply_text(ans.print_err)
+        except (SQLAlchemyError, psycopg2.Error):
+            logging.exception('Telegram user database operation failed')
+            if update.effective_message is not None:
+                await update.effective_message.reply_text(ans.db_err)
+        except Exception:
+            logging.exception('Telegram update handling failed')
 
     return wrapper
