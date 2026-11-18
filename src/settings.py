@@ -14,3 +14,10 @@ class Settings(BaseSettings):
     PROXY_URL: str | None = None
 
     model_config = ConfigDict(case_sensitive=True, env_file=".env", extra="allow")
+
+    @property
+    def db_url(self) -> str:
+        url = str(self.DB_DSN)
+        if self.DB_DSN.scheme == 'postgresql':
+            return url.replace('postgresql://', 'postgresql+psycopg2://', 1)
+        return url
